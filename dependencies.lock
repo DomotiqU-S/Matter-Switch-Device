@@ -11,6 +11,12 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 0.6.0~1
+  espressif/esp-serial-flasher:
+    component_hash: dcc42a16712a1a636509cf0bf90e14032d7f2141784b533613b267b6aa318d52
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.0.11
   espressif/esp_diag_data_store:
     component_hash: 8849195251dbb8a2d7268335277cfa310cef36e4ac1e90cd59ad3be4269a30d7
     source:
@@ -31,6 +37,12 @@ dependencies:
     version: 2.1.0
   espressif/esp_insights:
     component_hash: 2472a19de98a8b991baeeac7209765b70ce14ec2b1435dbed3abd020dd0f7227
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 1.0.1
+  espressif/esp_rcp_update:
+    component_hash: ae148f1c4cd8466cd3b8bf84fce30030f28a0e76c79d08e756be84d820096fc1
     source:
       service_url: https://api.components.espressif.com/
       type: service
@@ -82,6 +94,6 @@ dependencies:
     source:
       type: idf
     version: 5.1.1
-manifest_hash: 51fe40d3aae0527078c0fa921485269fb23f412079150bf135e7f4e1cb423eaa
+manifest_hash: d2b34c070368b809a01d7fb750b82d0e181f7b1c2045dfcbd5135fa6a7d73662
 target: esp32s3
 version: 1.0.0

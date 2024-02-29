@@ -65,9 +65,10 @@ esp_err_t PWMDriver::setPWM(uint16_t duty)
 
 esp_err_t PWMDriver::setIntensity(uint8_t intensity)
 {
+    printf("Intensity: %d\n", intensity);
     m_intensity = intensity;
     m_duty = (uint16_t)((MAX_DUTY - MIN_DUTY) * (m_intensity / 100.0));
-    return setPWM(m_duty);
+    return ESP_OK;
 }
 
 esp_err_t PWMDriver::setState(bool state)

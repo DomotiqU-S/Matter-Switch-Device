@@ -1,6 +1,7 @@
 #ifndef SLIDER_DRIVER_HPP
 #define SLIDER_DRIVER_HPP
 
+#include "CAP1298.hpp"
 #include <esp_err.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -12,15 +13,29 @@ class SliderDriver
 private:
     bool m_isOn;
     uint8_t m_level;
-    // CAP1298 i2c driver
+    CAP1298 capacitance_touch;
+
+    esp_err_t m_flag;
+
 public:
-    SliderDriver();
+    SliderDriver() : capacitance_touch(GPIO_NUM_21, GPIO_NUM_22) {
+        m_flag = capacitance_touch.begin();
+    }
     ~SliderDriver();
-    HMI_driver_handle_t slider_init();
-    void slider_set_level(uint8_t level);
-    uint8_t slider_get_level();
-    void slider_set_on_off(bool isOn);
-    bool slider_get_on_off();
+    HMI_driver_handle_t init();
+    esp_err_t getFlag();
+    uint8_t getLevel();
+
+    /**
+     * @brief The function read the value of the slider
+     * When new touches are detected, it checks if the slider is moving up or down in the given time
+     * If the touch is too long on a single position, it will be considered as not moving
+     * The function will triger the IsMoving function
+     * 
+     * @param interval The time in milliseconds to check if the slider is moving (default 100ms)
+     * @param threshold The threshold to consider the slider as moving in interval time multiple (default 5 times)
+     */
+    void loop(uint8_t interval = 100, uint8_t threshold = 5);
 };
 
 #endif // SLIDER_DRIVER_HPP

@@ -2,6 +2,7 @@
 #define SLIDER_DRIVER_HPP
 
 #include "CAP1298.hpp"
+#include "driver/gpio.h"
 #include <esp_err.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -18,13 +19,16 @@ private:
     esp_err_t m_flag;
 
 public:
-    SliderDriver() : capacitance_touch(GPIO_NUM_21, GPIO_NUM_22) {
+    SliderDriver() : capacitance_touch(GPIO_NUM_16, GPIO_NUM_15) {
         m_flag = capacitance_touch.begin();
     }
     ~SliderDriver();
     HMI_driver_handle_t init();
     esp_err_t getFlag();
     uint8_t getLevel();
+    bool newTouches();
+    uint8_t getNewTouches();
+    void updateTouchStatus();
 
     /**
      * @brief The function read the value of the slider

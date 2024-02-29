@@ -13,7 +13,7 @@ endpoint_t *configureDimmableSwitch(dimmable_plugin_unit::config_t &s_switch, di
 {
     //priv_endpoint = dimmer_switch::create(node, &c_switch, flags, priv_data);
     s_switch.on_off.on_off = false;
-    s_switch.level_control.current_level = (uint8_t)0;
+    s_switch.level_control.current_level = (uint8_t)254;
     priv_endpoint = dimmable_plugin_unit::create(node, &s_switch, flags, priv_data);
 
     // add switch client cluster

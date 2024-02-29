@@ -18,13 +18,13 @@
 #define LEDC_DUTY_RESOLUTION   LEDC_TIMER_10_BIT
 #define MAX_DUTY               (uint32_t)1024
 #define MIN_DUTY               (uint32_t)0
-#define LEDC_FREQUENCY         (uint32_t)120
+#define LEDC_FREQUENCY         (uint32_t)720
 #define LEDC_FADE_TIME         (ledc_fade_mode_t)500
 // #define DEBUG_SENSOR
 
 class PWMDriver
 {
-private:
+private: 
     bool m_fade;
     bool m_state;
     ledc_fade_mode_t m_fade_time;

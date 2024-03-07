@@ -8,9 +8,6 @@
 #include <driver/gpio.h>
 #include <esp_matter.h>
 #include <esp_matter_console.h>
-#include "SliderDriver.hpp"
-#include "PWMDriver.hpp"
-
 using namespace esp_matter;
 using namespace chip::app::Clusters;
 using namespace esp_matter::cluster;
@@ -113,7 +110,6 @@ app_driver_handle_t app_driver_switch_init()
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val)
 {
-    // if the cluster is for on/off switch
     if (endpoint_id == 1) {
         // Get the node id of the device
         //uint64_t node_id = 0;
@@ -157,4 +153,42 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
 esp_err_t app_driver_set_default(uint16_t endpoint_id)
 {
     return ESP_OK;
+}
+
+void decomposeNumber(int16_t value, uint8_t* result) {
+
+    result[0] = value % 10;
+    result[1] = (value / 10) % 10;
+    result[2] = (value / 100) % 10;
+    result[3] = (value / 1000) % 10;
+}
+
+int16_t formatForAttribute(int16_t value, uint8_t precision) {
+    uint8_t decomposed[4];
+    decomposeNumber(value, decomposed);
+
+    if(precision >= 0) {
+        // if the decomposed number[-1] is greater or equal to 5, we round up
+        // else we round down
+        if(decomposed[precision-1] >= 5) {
+            decomposed[precision] += 1;
+            // set all the digits after the precision to 0
+            for(int i = precision-1; i >= 0; i--) {
+                decomposed[i] = 0;
+            }
+        }
+        else {
+            // set all the digits after the precision to 0
+            for(int i = precision-1; i >= 0; i--) {
+                decomposed[i] = 0;
+            }
+        }
+    }
+
+    int16_t result = 0;
+    for(int i = 3; i >= 0; i--) {
+        result = result * 10 + decomposed[i];
+    }
+
+    return result;
 }

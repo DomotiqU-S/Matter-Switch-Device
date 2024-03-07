@@ -98,9 +98,7 @@ extern "C" void app_main()
     node::config_t node_config;
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
 
-    if (!node) {
-        configureSensor(ENDPOINT_FLAG_NONE, nullptr, node);
-    }
+    configureSensor(0, nullptr, node);
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     /* Set OpenThread platform config */

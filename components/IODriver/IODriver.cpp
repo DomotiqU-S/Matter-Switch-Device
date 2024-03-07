@@ -81,6 +81,22 @@ void sliderTask(void *pvParameter)
     }
 }
 
+void taskSensor(void *parameters) {
+    while (1) {
+        esp_matter_attr_val_t val_temp;
+        val_temp.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
+        val_temp.val.i16 = formatForAttribute(2560, 1);
+        esp_matter::attribute::update(0x1, 0x402, 0x0, &val_temp);
+
+        esp_matter_attr_val_t val_hum;
+        val_hum.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
+        val_hum.val.i16 = formatForAttribute(5000, 0);
+        esp_matter::attribute::update(0x1, 0x405, 0x0, &val_hum);
+
+        vTaskDelay(60000 / portTICK_PERIOD_MS);
+    }
+}
+
 app_driver_handle_t app_driver_switch_init()
 {
     HMI_driver_handle_t slider_handle = slider.init();

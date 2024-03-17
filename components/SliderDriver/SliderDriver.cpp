@@ -40,3 +40,9 @@ void SliderDriver::updateTouchStatus()
     // Update the touch status
     capacitance_touch.updateTouchStatus();
 }
+
+bool SliderDriver::start()
+{
+    esp_err_t ret = capacitance_touch.init();
+    return ret == ESP_OK;
+}

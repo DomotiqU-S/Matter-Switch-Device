@@ -2,40 +2,42 @@
 
 endpoint_t *priv_endpoint;
 
-esp_err_t configureOnOffSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
+endpoint_t* configureSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
 {
     free(priv_endpoint);
 
-    on_off_plugin_unit::config_t on_off_switch;
-
-    on_off_switch.on_off.on_off = true;
-
     priv_endpoint = endpoint::create(node, flags, priv_data);
-    on_off_plugin_unit::create(priv_endpoint, &on_off_switch, flags, priv_data);
+    descriptor::config_t descriptor;
+    descriptor::create(priv_endpoint, &descriptor, flags);
 
-    return priv_endpoint != NULL ? ESP_OK : ESP_FAIL;
-}
+    #if SWITCH_TYPE == SWITCH_ON_OFF
+        on_off_plugin_unit::config_t on_off_actuator;
+        on_off_switch::config_t on_off_switch;
 
-esp_err_t configureDimmableSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
-{
-    free(priv_endpoint);
+        on_off_actuator.on_off.on_off = true;
 
-    dimmable_plugin_unit::config_t dimmer_actuator;
-    dimmer_switch::config_t dimmer_switch;
+        endpoint::add_device_type(priv_endpoint, on_off_switch::get_device_type_id(), on_off_switch::get_device_type_version());
 
-    dimmer_actuator.on_off.on_off = true;
-    dimmer_actuator.level_control.current_level = (uint8_t)69;
-    dimmer_actuator.level_control.on_level = (uint8_t)69;
+        on_off_switch::create(priv_endpoint, &on_off_switch, flags, priv_data);
+        on_off_plugin_unit::create(priv_endpoint, &on_off_actuator, flags, priv_data);
 
-    priv_endpoint = endpoint::create(node, flags, priv_data);
+    #elif SWITCH_TYPE == SWITCH_DIMMABLE
+        dimmable_plugin_unit::config_t dimmer_actuator;
+        dimmer_switch::config_t dimmer_switch;
 
-    dimmer_switch::create(priv_endpoint, &dimmer_switch, flags, priv_data);
-    dimmable_plugin_unit::create(priv_endpoint, &dimmer_actuator, flags, priv_data);
+        dimmer_actuator.on_off.on_off = DEFAULT_STATE;
+        dimmer_actuator.level_control.current_level = DEFAULT_INTENSITY;
+        dimmer_actuator.level_control.on_level = DEFAULT_INTENSITY;
 
-    return priv_endpoint != NULL ? ESP_OK : ESP_FAIL;
-}
+        endpoint::add_device_type(priv_endpoint, dimmer_switch::get_device_type_id(), dimmer_switch::get_device_type_version());
+        endpoint::add_device_type(priv_endpoint, dimmable_plugin_unit::get_device_type_id(), dimmable_plugin_unit::get_device_type_version());
 
-endpoint_t *getEndpoint()
-{
+        dimmer_switch::create(priv_endpoint, &dimmer_switch, flags, priv_data);
+        dimmable_plugin_unit::create(priv_endpoint, &dimmer_actuator, flags, priv_data);
+
+    #else
+        #error "Invalid switch type"
+    #endif
+
     return priv_endpoint;
 }

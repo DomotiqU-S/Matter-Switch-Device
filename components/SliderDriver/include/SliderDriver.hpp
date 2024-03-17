@@ -19,10 +19,11 @@ private:
     esp_err_t m_flag;
 
 public:
-    SliderDriver() : capacitance_touch(GPIO_NUM_16, GPIO_NUM_15) {
+    SliderDriver() : capacitance_touch(GPIO_NUM_6, GPIO_NUM_9) {
         m_flag = capacitance_touch.begin();
     }
     ~SliderDriver();
+    bool start();
     HMI_driver_handle_t init();
     esp_err_t getFlag();
     uint8_t getLevel();

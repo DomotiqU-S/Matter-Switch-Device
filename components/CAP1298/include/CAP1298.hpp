@@ -78,7 +78,14 @@ public:
     ~CAP1298();
 
     /**
-     * @brief Initialize the CAP1298
+     * @brief Set the default configuration of the CAP1298
+     * 
+     * @return esp_err_t 
+     */
+    esp_err_t init();
+
+    /**
+     * @brief Initialize the Bus Controller
      * If the initialization fails, the flag will be set to a non-zero value
      * @return esp_err_t 
      */

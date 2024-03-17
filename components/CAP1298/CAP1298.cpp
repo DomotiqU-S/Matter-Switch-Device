@@ -7,17 +7,7 @@ CAP1298::~CAP1298()
 esp_err_t CAP1298::begin()
 {
     esp_err_t ret;
-    uint8_t tx_buffer[1];
     ret = this->busController.begin();
-    if (ret == ESP_OK)
-    {
-        tx_buffer[0] = 0x8C;
-        ret |= this->busController.writeByte(tx_buffer, CAP1298_MULTIPLE_TOUCH_CONFIG);
-        tx_buffer[0] = 0x5F;
-        ret |= this->busController.writeByte(tx_buffer, CAP1298_SENSITIVITY_CONTROL);
-        tx_buffer[0] = 0x00;
-        ret |= this->busController.writeByte(tx_buffer, CAP1298_REPEAT_RATE_ENABLE);
-    }
     return ret;
 }
 
@@ -48,4 +38,19 @@ void CAP1298::updateTouchStatus()
 void CAP1298::isMoving(uint16_t value_to_mapped)
 {
 
+}
+
+esp_err_t CAP1298::init()
+{
+    uint8_t tx_buffer[1];
+    esp_err_t ret = 0;
+
+    tx_buffer[0] = 0x8C;
+    ret |= this->busController.writeByte(tx_buffer, CAP1298_MULTIPLE_TOUCH_CONFIG);
+    tx_buffer[0] = 0x5F;
+    ret |= this->busController.writeByte(tx_buffer, CAP1298_SENSITIVITY_CONTROL);
+    tx_buffer[0] = 0x00;
+    ret |= this->busController.writeByte(tx_buffer, CAP1298_REPEAT_RATE_ENABLE);
+
+    return ret;
 }

@@ -51,6 +51,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
 
     case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
         ESP_LOGI(TAG, "Commissioning window opened");
+        // Start Sensor Task
         break;
 
     case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:

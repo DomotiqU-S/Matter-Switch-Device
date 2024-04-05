@@ -27,30 +27,15 @@ static void IRAM_ATTR buttonCb(void* arg) {
     isPressed = !isPressed;
 }
 
-bool verifyLevel(uint8_t level)
-{
-    uint8_t scan_value = level;
-    uint8_t ones_count = 0;
-    while (scan_value > 0)
-    {
-        scan_value = scan_value >> 1;
-        if (scan_value & 0x01)
-        {
-            ones_count++;
-        }
-    }
-    return ones_count == 1;
-}
-
 void sliderTask(void *pvParameter)
 {
     while (1) {
         if(slider.newTouches()) {
             slider.updateTouchStatus();
             esp_matter_attr_val_t attr_val;
-            attr_val.val.u8 = slider.getNewTouches();
+            attr_val.val.u8 = slider.getLevel(100);
             attr_val.type = (esp_matter_val_type_t)8;
-            ESP_LOGI(TAG, "Slider level: %d", attr_val.val.u8);
+            ESP_LOGI("IODriver", "Slider level: %d", attr_val.val.u8);
             //esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
         }
 
@@ -156,9 +141,11 @@ esp_err_t app_driver_start_sensor()
 {
     bool is_configured = slider.start();
     if(is_configured) {
-        xTaskCreate(sliderTask, "sliderTask", 2048, NULL, 5, NULL);
+        xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 5, NULL);
     }
     else {
         ESP_LOGE(TAG, "Slider not configured");
     }
+
+    return ESP_OK;
 }

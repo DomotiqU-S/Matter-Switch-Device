@@ -54,10 +54,11 @@
 class CAP1298
 {
 private:
-    I2CController busController;
+    I2CController* m_bus;
     uint8_t m_touchData = 0;
     uint8_t m_newTouches = 0;
     uint8_t m_newReleases = 0;
+    uint8_t m_address = 0;
 
     int16_t m_invalid_constructor = 0;
 public:
@@ -66,15 +67,10 @@ public:
      * 
      * @param sda the SDA pin
      * @param scl the SCL pin
-     * @param freq the I2C frequency (default 100000)
      * @param address the I2C address (default 0x28)
      */
-    CAP1298(gpio_num_t sda, gpio_num_t scl, uint32_t freq = 100000, uint8_t address = CAP1298_I2C_ADDRESS) : busController(address, sda, scl, freq) {
-        if(sda == scl) {
-            m_invalid_constructor = ESP_ERR_INVALID_ARG;
-            return;
-        }
-    }
+    CAP1298(gpio_num_t sda, gpio_num_t scl, uint8_t address = CAP1298_I2C_ADDRESS);
+
     ~CAP1298();
 
     /**
@@ -125,35 +121,6 @@ public:
      * @return int16_t 
      */
     int16_t getFlag() { return m_invalid_constructor; }
-
-    // TODO: Implement the following methods
-    /**
-     * @brief The method return true is the touch data are moving in the given direction
-     * 
-     * @param value_to_mapped The value to be mapped
-     * @param callback_func The callback function
-     */
-    void isMoving(uint16_t value_to_mapped);
-
-    // TODO: Implement the following methods
-    /**
-     * @brief The method check if the surface is touched multiple times.
-     * 
-     * @param time_touched The time to check if the surface is touched multiple times (max 3)
-     * @param callback_func The fucntion to call when the multiple touch is achived.
-     */
-    void isRepeatedTouch(uint8_t time_touched, void* callbakc_func);
-
-    // TODO: Implement the following methods
-    /**
-     * @brief The method check if the surface is touched for a long time.
-     * If the surface is touched for a greater time than the given time, the method return true.
-     * @return true 
-     * @return false 
-     */
-    void isLongTouch(void* callback_func);
-
-    void loop(uint16_t interval = 100);
 };
 
 #endif // CAP1298_H

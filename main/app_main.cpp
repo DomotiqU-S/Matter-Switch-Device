@@ -100,15 +100,15 @@ extern "C" void app_main()
     node::config_t node_config;
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
 
-    configureDimmableSwitch(ENDPOINT_FLAG_NONE, switch_handle, node);
+    esp_err_t ret = configureSwitch(ENDPOINT_FLAG_NONE, switch_handle, node);
 
     /* These node and endpoint handles can be used to create/add other endpoints and clusters. */
-    if (!node) {
+    if (!node || ret != ESP_OK) {
         ESP_LOGE(TAG, "Matter node creation failed");
     }
 
-    switch_endpoint_id = endpoint::get_id(getEndpoint());
-    ESP_LOGI(TAG, "Switch created with endpoint_id %d", switch_endpoint_id);
+    // switch_endpoint_id = endpoint::get_id(endpoint_switch);
+    // ESP_LOGI(TAG, "Switch created with endpoint_id %d", switch_endpoint_id);
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     /* Set OpenThread platform config */
@@ -120,15 +120,11 @@ extern "C" void app_main()
     set_openthread_platform_config(&config);
 #endif
 
-    /* Matter start */
-    err = esp_matter::start(app_event_cb);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Matter start failed: %d", err);
-    }
+    // /* Matter start */
+    // err = esp_matter::start(app_event_cb);
+    // if (err != ESP_OK) {
+    //     ESP_LOGE(TAG, "Matter start failed: %d", err);
+    // }
+    app_driver_start_sensor();
 
-#if CONFIG_ENABLE_CHIP_SHELL
-    esp_matter::console::diagnostics_register_commands();
-    esp_matter::console::wifi_register_commands();
-    esp_matter::console::init();
-#endif
 }

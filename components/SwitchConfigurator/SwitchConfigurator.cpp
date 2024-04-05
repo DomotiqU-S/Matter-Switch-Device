@@ -2,13 +2,13 @@
 
 endpoint_t *priv_endpoint;
 
-endpoint_t* configureSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
+esp_err_t configureSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
 {
     free(priv_endpoint);
 
     priv_endpoint = endpoint::create(node, flags, priv_data);
     descriptor::config_t descriptor;
-    descriptor::create(priv_endpoint, &descriptor, flags);
+    descriptor::create(priv_endpoint, &descriptor, CLUSTER_FLAG_SERVER);
 
     #if SWITCH_TYPE == SWITCH_ON_OFF
         on_off_plugin_unit::config_t on_off_actuator;
@@ -32,12 +32,13 @@ endpoint_t* configureSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *
         endpoint::add_device_type(priv_endpoint, dimmer_switch::get_device_type_id(), dimmer_switch::get_device_type_version());
         endpoint::add_device_type(priv_endpoint, dimmable_plugin_unit::get_device_type_id(), dimmable_plugin_unit::get_device_type_version());
 
-        dimmer_switch::create(priv_endpoint, &dimmer_switch, flags, priv_data);
-        dimmable_plugin_unit::create(priv_endpoint, &dimmer_actuator, flags, priv_data);
+        //dimmer_switch::create(priv_endpoint, &dimmer_switch, CLUSTER_FLAG_CLIENT | CLUSTER_FLAG_SERVER, priv_data);
+        on_off::create(priv_endpoint, &dimmer_actuator.on_off, CLUSTER_FLAG_SERVER, on_off::feature::lighting::get_id());
+        level_control::create(priv_endpoint, &dimmer_actuator.level_control, CLUSTER_FLAG_SERVER, level_control::feature::on_off::get_id() | level_control::feature::lighting::get_id());
 
     #else
         #error "Invalid switch type"
     #endif
 
-    return priv_endpoint;
+    return priv_endpoint != nullptr ? ESP_OK : ESP_FAIL;
 }

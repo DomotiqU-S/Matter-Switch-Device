@@ -48,7 +48,6 @@ uint8_t SliderDriver::getLevel(uint8_t max_level)
     uint8_t pwm = 60;
     // remap the value to the led value 1 - 8
     uint8_t led_value = ((float)8 / 7.0) * value;
-    ESP_LOGI("SliderDriver", "LED value: %d", led_value);
 
     for (int i = 7; i >= (7 - led_value); i--) {
         led_level_driver.setPWM(i, pwm);

@@ -24,30 +24,15 @@ static void IRAM_ATTR buttonCb(void* arg) {
     isPressed = !isPressed;
 }
 
-bool verifyLevel(uint8_t level)
-{
-    uint8_t scan_value = level;
-    uint8_t ones_count = 0;
-    while (scan_value > 0)
-    {
-        scan_value = scan_value >> 1;
-        if (scan_value & 0x01)
-        {
-            ones_count++;
-        }
-    }
-    return ones_count == 1;
-}
-
 void sliderTask(void *pvParameter)
 {
     while (1) {
         if(slider.newTouches()) {
             slider.updateTouchStatus();
             esp_matter_attr_val_t attr_val;
-            attr_val.val.u8 = 0; //slider.getNewTouches();
+            attr_val.val.u8 = slider.getLevel(100);
             attr_val.type = (esp_matter_val_type_t)8;
-            ESP_LOGI(TAG, "Slider level: %d", attr_val.val.u8);
+            ESP_LOGI("IODriver", "Slider level: %d", attr_val.val.u8);
             //esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
         }
 
@@ -100,25 +85,18 @@ void taskSensor(void *parameters) {
 app_driver_handle_t app_driver_switch_init()
 {
     HMI_driver_handle_t slider_handle = slider.init();
-    // Create a task for the slider
-    // if(slider.getFlag() == ESP_OK) {
-    //     xTaskCreate(sliderTask, "slider_task", 2048, NULL, 5, NULL);
-    // }
-    // else {
-    //     ESP_LOGE(TAG, "Slider initialization failed");
-    // }
-    
-    xTaskCreate(sliderTask, "slider_task", 4096, NULL, 5, NULL);
+    //Create a task for the slider
+    ESP_LOGI(TAG, "Slider initialization: %d", slider.getFlag());
 
     // Config the GPIO_PIN 0 as input and install the ISR service for falling edge
     
-    gpio_set_direction(GPIO_NUM_10, GPIO_MODE_INPUT);
-    gpio_pulldown_en(GPIO_NUM_10);
-    gpio_pullup_dis(GPIO_NUM_10);
-    gpio_set_intr_type(GPIO_NUM_10, GPIO_INTR_NEGEDGE);
+    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_INPUT);
+    gpio_pulldown_en(GPIO_NUM_5);
+    gpio_pullup_dis(GPIO_NUM_5);
+    gpio_set_intr_type(GPIO_NUM_5, GPIO_INTR_NEGEDGE);
 
     gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_NUM_10, buttonCb, (void*) GPIO_NUM_10);
+    gpio_isr_handler_add(GPIO_NUM_5, buttonCb, (void*) GPIO_NUM_5);
 
     return (app_driver_handle_t)slider_handle;
 }
@@ -171,40 +149,15 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
     return ESP_OK;
 }
 
-void decomposeNumber(int16_t value, uint8_t* result) {
-
-    result[0] = value % 10;
-    result[1] = (value / 10) % 10;
-    result[2] = (value / 100) % 10;
-    result[3] = (value / 1000) % 10;
-}
-
-int16_t formatForAttribute(int16_t value, uint8_t precision) {
-    uint8_t decomposed[4];
-    decomposeNumber(value, decomposed);
-
-    if(precision >= 0) {
-        // if the decomposed number[-1] is greater or equal to 5, we round up
-        // else we round down
-        if(decomposed[precision-1] >= 5) {
-            decomposed[precision] += 1;
-            // set all the digits after the precision to 0
-            for(int i = precision-1; i >= 0; i--) {
-                decomposed[i] = 0;
-            }
-        }
-        else {
-            // set all the digits after the precision to 0
-            for(int i = precision-1; i >= 0; i--) {
-                decomposed[i] = 0;
-            }
-        }
+esp_err_t app_driver_start_sensor()
+{
+    bool is_configured = slider.start();
+    if(is_configured) {
+        xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 5, NULL);
+    }
+    else {
+        ESP_LOGE(TAG, "Slider not configured");
     }
 
-    int16_t result = 0;
-    for(int i = 3; i >= 0; i--) {
-        result = result * 10 + decomposed[i];
-    }
-
-    return result;
+    return ESP_OK;
 }

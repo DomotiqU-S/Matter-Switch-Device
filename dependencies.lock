@@ -5,12 +5,24 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 2.5.0
+  espressif/esp-serial-flasher:
+    component_hash: dcc42a16712a1a636509cf0bf90e14032d7f2141784b533613b267b6aa318d52
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.0.11
   espressif/esp_encrypted_img:
     component_hash: 1c34d5b0e70a3878e63fe2bedb00824bcf83c30d9b020029c38400d0d14fe182
     source:
       service_url: https://api.components.espressif.com/
       type: service
     version: 2.1.0
+  espressif/esp_rcp_update:
+    component_hash: 7479ecdbb35200ad0cc9fb09aa2dfbb807f46c861cf5b11ff00db56b591bf759
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 1.0.2
   espressif/esp_secure_cert_mgr:
     component_hash: a20007d67e65a000670ab77e45d7554c943eb8dcb0abeada0a57dd9adac3a703
     source:
@@ -46,6 +58,6 @@ dependencies:
     source:
       type: idf
     version: 5.1.1
-manifest_hash: 827b619dae2bc8668e3294d45cef28c36287093130f265a182b9b5ea666d64e1
+manifest_hash: 1c7dc14ec7ba5ed61628a8728123868a9bd5ad21f18325978d7c3d3c6a1db59d
 target: esp32h2
 version: 1.0.0

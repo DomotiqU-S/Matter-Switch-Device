@@ -14,13 +14,13 @@
 #include <esp_matter_console.h>
 #include <esp_matter_ota.h>
 #include "IODriver.hpp"
-#include "SwitchConfigurator.hpp"
+#include "SensorConfigurator.hpp"
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/ESP32/OpenthreadLauncher.h>
 #endif
 
 static const char *TAG = "app_main";
-uint16_t switch_endpoint_id = 0;
+uint16_t sensor_endpoint_id = 0;
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -94,7 +94,6 @@ extern "C" void app_main()
 
     /* Initialize driver */
     app_driver_handle_t switch_handle = app_driver_switch_init();
-    //app_reset_button_register(switch_handle);
 
     /* Create a Matter node and add the mandatory Root Node device type on endpoint 0 */
     node::config_t node_config;

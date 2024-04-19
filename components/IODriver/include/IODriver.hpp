@@ -18,7 +18,13 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
 
 esp_err_t app_driver_set_default(uint16_t endpoint_id);
 
+<<<<<<< HEAD
 esp_err_t app_driver_start_sensor();
+=======
+int16_t formatForAttribute(int16_t value, uint8_t precision);
+
+void decomposeNumber(int16_t value, uint8_t* result);
+>>>>>>> main
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()                                           \

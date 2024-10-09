@@ -4,4 +4,8 @@
 [submodule "components/CAP1298"]
 	path = components/CAP1298
 	url = https://github.com/DomotiqU-S/CAP1298
-	branche = submodule_main
+	branch = submodule_main
+[submodule "components/IS31FL3235A"]
+	path = components/IS31FL3235A
+	url = https://github.com/DomotiqU-S/IS31FL3235A
+	branch = submodule_main

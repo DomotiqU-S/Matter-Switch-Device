@@ -26,14 +26,14 @@ static void IRAM_ATTR buttonCb(void* arg) {
 
 void sliderTask(void *pvParameter)
 {
-    while (1) {
+    for(;;) {
         if(slider.newTouches()) {
             slider.updateTouchStatus();
             esp_matter_attr_val_t attr_val;
             attr_val.val.u8 = slider.getLevel(100);
             attr_val.type = (esp_matter_val_type_t)8;
             ESP_LOGI("IODriver", "Slider level: %d", attr_val.val.u8);
-            //esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
+            esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
         }
 
         // Wait for the semaphore to be given
@@ -62,23 +62,7 @@ void sliderTask(void *pvParameter)
             isPressed = false;
         }
 
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-    }
-}
-
-void taskSensor(void *parameters) {
-    while (1) {
-        esp_matter_attr_val_t val_temp;
-        val_temp.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
-        val_temp.val.i16 = formatForAttribute(2560, 1);
-        esp_matter::attribute::update(0x1, 0x402, 0x0, &val_temp);
-
-        esp_matter_attr_val_t val_hum;
-        val_hum.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
-        val_hum.val.i16 = formatForAttribute(5000, 0);
-        esp_matter::attribute::update(0x1, 0x405, 0x0, &val_hum);
-
-        vTaskDelay(60000 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 

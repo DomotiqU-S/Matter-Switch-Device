@@ -1,3 +1,7 @@
 [submodule "components/BusIO"]
 	path = components/BusIO
 	url = https://github.com/DomotiqU-S/BusIO
+[submodule "components/CAP1298"]
+	path = components/CAP1298
+	url = https://github.com/DomotiqU-S/CAP1298
+	branche = submodule_main

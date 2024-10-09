@@ -15,8 +15,10 @@ class SliderDriver : public LightDriver
 {
 private:
     bool m_isOn;
+    
     uint8_t m_level;
     uint8_t m_previous_level = 0;
+
     CAP1298 capacitance_touch;
     IS31FL3235A led_level_driver;
 

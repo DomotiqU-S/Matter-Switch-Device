@@ -58,6 +58,7 @@ uint8_t SliderDriver::getLevel(uint8_t max_level)
     m_previous_level = ((float)max_level / 7.0) * value;
     return ((float)max_level / 7.0) * value;
 }
+
 bool SliderDriver::newTouches()
 {
     // Check if there are new touches
@@ -81,4 +82,27 @@ bool SliderDriver::start()
     esp_err_t ret = capacitance_touch.init();
     ret |= led_level_driver.sendConfig();
     return ret == ESP_OK;
+}
+
+esp_err_t SliderDriver::set_power(bool power)
+{
+    // Set the channel 9 
+    led_level_driver.setLEDControl(9, power);
+    led_level_driver.setPWM(9, power ? 40 : 0);
+    led_level_driver.setLEDControl(8, !power);
+    led_level_driver.setPWM(8, !power ? 40 : 0);
+    led_level_driver.updatePWM();
+
+    // Update the GPIO value
+
+    // Set the power
+    return ESP_OK;
+}
+
+esp_err_t SliderDriver::set_brightness(uint8_t brightness)
+{
+    // Set the brightness
+    m_level = brightness;
+
+    return ESP_OK;
 }

@@ -14,7 +14,7 @@
 #include <esp_matter_console.h>
 #include <esp_matter_ota.h>
 #include "IODriver.hpp"
-#include "SensorConfigurator.hpp"
+#include "SwitchConfigurator.hpp"
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/ESP32/OpenthreadLauncher.h>
 #endif
@@ -25,6 +25,7 @@ uint16_t sensor_endpoint_id = 0;
 using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace esp_matter::endpoint;
+
 
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
 {
@@ -119,7 +120,7 @@ extern "C" void app_main()
     set_openthread_platform_config(&config);
 #endif
 
-    // /* Matter start */
+    // // /* Matter start */
     // err = esp_matter::start(app_event_cb);
     // if (err != ESP_OK) {
     //     ESP_LOGE(TAG, "Matter start failed: %d", err);

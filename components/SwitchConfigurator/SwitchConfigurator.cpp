@@ -2,6 +2,14 @@
 
 endpoint_t *priv_endpoint;
 
+/**
+ * @brief The function configure a switch with the given flags, private data and node.
+ * 
+ * @param flags flags to configure the switch
+ * @param priv_data the callback data
+ * @param node the node to install the switch
+ * @return esp_err_t 
+ */
 esp_err_t configureSwitch(uint8_t flags, void *priv_data, esp_matter::node_t *node)
 {
     free(priv_endpoint);

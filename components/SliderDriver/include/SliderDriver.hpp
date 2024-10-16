@@ -8,6 +8,15 @@
 #include <esp_err.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <rom/ets_sys.h>
+#include "driver/gptimer.h"
+
+#define TIMER_DIVIDER         (160)  //  Hardware timer clock divider
+#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
+#define PULSE_PERIOD          (4) // us
+#define MAX_INTERVAL 8333
+
+const uint32_t timer_interval_sec = 1000;
 
 typedef void *HMI_driver_handle_t;
 
@@ -15,20 +24,82 @@ class SliderDriver : public LightDriver
 {
 private:
     bool m_isOn;
+    bool start_fade = false;
+    bool is_running = false;
     
     uint8_t m_level;
     uint8_t m_previous_level = 0;
 
-    CAP1298 capacitance_touch;
-    IS31FL3235A led_level_driver;
-
+    //CAP1298 capacitance_touch;
+    //IS31FL3235A led_level_driver;
+    gptimer_handle_t timer_handle;
     esp_err_t m_flag;
 
 public:
-    SliderDriver() : capacitance_touch(GPIO_NUM_10, GPIO_NUM_11), led_level_driver(GPIO_NUM_10, GPIO_NUM_11, IS31FL3235A_ADDR) {
-        m_flag = capacitance_touch.begin();
-        m_flag = led_level_driver.begin();
+
+    static bool IRAM_ATTR on_timer_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
+        SliderDriver *driver = static_cast<SliderDriver *>(user_ctx);
+        driver->stop_timer();
+        gpio_set_level(GPIO_NUM_10, 1);
+        return true;
     }
+
+    static void IRAM_ATTR gpio_isr_handler(void *arg) {
+        gpio_set_level(GPIO_NUM_10, 0);
+        SliderDriver *driver = static_cast<SliderDriver *>(arg);
+        driver->restart_timer();   
+    }
+
+    SliderDriver() /*: capacitance_touch(GPIO_NUM_10, GPIO_NUM_11), led_level_driver(GPIO_NUM_10, GPIO_NUM_11, IS31FL3235A_ADDR)*/ {
+        // m_flag = capacitance_touch.begin();
+        // m_flag = led_level_driver.begin();
+
+        gptimer_config_t timer_config = {
+            .clk_src = GPTIMER_CLK_SRC_DEFAULT, // Source d'horloge par défaut
+            .direction = GPTIMER_COUNT_UP,      // Comptage ascendant
+            .resolution_hz = 1000000,           // Résolution de 1 MHz (1µs)
+        };
+
+        ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &timer_handle));
+
+        // Configurer l'alarme
+        gptimer_alarm_config_t alarm_config;
+        alarm_config.alarm_count = MAX_INTERVAL / 3;
+        alarm_config.reload_count = false;
+        alarm_config.flags.auto_reload_on_alarm = true;
+
+        gptimer_event_callbacks_t timer_callbacks = {
+            .on_alarm = on_timer_alarm_cb,
+        };
+
+        ESP_ERROR_CHECK(gptimer_register_event_callbacks(timer_handle, &timer_callbacks, (void *)this));
+        ESP_ERROR_CHECK(gptimer_set_alarm_action(timer_handle, &alarm_config));
+        ESP_ERROR_CHECK(gptimer_enable(timer_handle));
+
+
+        // Init GPIO
+        gpio_set_direction(GPIO_NUM_10, GPIO_MODE_OUTPUT);
+        gpio_set_level(GPIO_NUM_10, 1);
+
+        gpio_set_direction(GPIO_NUM_12, GPIO_MODE_INPUT);
+        gpio_set_intr_type(GPIO_NUM_12, GPIO_INTR_ANYEDGE);
+        
+        gpio_install_isr_service(0);
+        gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
+
+    }
+
+    void restart_timer() {
+        gptimer_start(timer_handle);
+        this->is_running = true;
+    }
+
+    void stop_timer() {
+        gptimer_stop(timer_handle);
+        gptimer_set_raw_count(timer_handle, 0);
+        this->is_running = false;
+    }
+
     ~SliderDriver();
     bool start();
     HMI_driver_handle_t init();
@@ -39,22 +110,24 @@ public:
     void updateTouchStatus();
 
     // LightDriver Methods
-    uint16_t get_temperature() override;
-    uint8_t get_intensity() override;
-    uint32_t get_duty(uint8_t channel) override;
-    uint32_t get_hue() override;
-    uint8_t get_saturation() override;
-    uint16_t get_x() override;
-    uint16_t get_y() override;
+    uint16_t get_temperature() { return 0; };
+    uint8_t get_intensity() { return 0; };
+    uint32_t get_duty(uint8_t channel) { return 0; };
+    uint16_t get_hue() { return 0; };
+    uint8_t get_saturation() { return 0; };
+    uint16_t get_x() { return 0; };
+    uint16_t get_y() { return 0; };
 
     esp_err_t set_power(bool power) override;
     esp_err_t set_brightness(uint8_t brightness) override;
-    esp_err_t set_color(uint16_t x, uint16_t y) override;
-    esp_err_t set_hue(uint16_t hue) override;
-    esp_err_t set_saturation(uint8_t saturation) override;
-    esp_err_t set_temperature(uint32_t temperature) override;
+    esp_err_t set_color(uint16_t x, uint16_t y) { return 0; };
+    esp_err_t set_hue(uint16_t hue) { return 0; };
+    esp_err_t set_saturation(uint8_t saturation) { return 0; };
+    esp_err_t set_temperature(uint32_t temperature) { return 0; };
 
-    void led_routine() override;
+    void led_routine() {
+
+    }
 };
 
 #endif // SLIDER_DRIVER_HPP

@@ -103,7 +103,7 @@ app_driver_handle_t app_driver_switch_init()
     gpio_pullup_dis(GPIO_NUM_6);
     gpio_set_intr_type(GPIO_NUM_6, GPIO_INTR_POSEDGE);
 
-    gpio_install_isr_service(0);
+    // gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_NUM_6, touchPnl, (void*) GPIO_NUM_6);
 
     return (app_driver_handle_t)slider_handle;
@@ -118,19 +118,20 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
 
         if (cluster_id == OnOff::Id) {
             if (attribute_id == OnOff::Attributes::OnOff::Id) {
+                // ESP_LOGI("IODriver", "OnOff: %d", val->val.b);
                 slider.set_power(val->val.b);
             }
         }
         else if (cluster_id == LevelControl::Id) {
             if (attribute_id == LevelControl::Attributes::CurrentLevel::Id) {
 
-                ESP_LOGI(TAG, "Current level: %d", val->val.u16);
+                // ESP_LOGI("IODriver", "Current level: %d", val->val.u8);
 
                 // Fade the light with the light driver
-                slider.set_brightness(val->val.u16);
+                slider.set_brightness(val->val.u8);
 
                 // Save the level for the next iteration
-                old_level = val->val.u16;
+                old_level = val->val.u8;
             }
         }
     }
@@ -145,12 +146,12 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
 esp_err_t app_driver_start_sensor()
 {
     bool is_configured = slider.start();
-    if(is_configured) {
-        xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 5, NULL);
-    }
-    else {
-        ESP_LOGE(TAG, "Slider not configured");
-    }
+    // if(is_configured) {
+    //     xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 5, NULL);
+    // }
+    // else {
+    //     ESP_LOGE(TAG, "Slider not configured");
+    // }
 
     return ESP_OK;
 }

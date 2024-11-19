@@ -5,18 +5,15 @@
 #include "IS31FL3235A.hpp"
 #include "LightDriver.hpp"
 #include "driver/gpio.h"
+#include "device.h"
 #include <esp_err.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <rom/ets_sys.h>
 #include "driver/gptimer.h"
 
-#define TIMER_DIVIDER         (160)  //  Hardware timer clock divider
-#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
-#define PULSE_PERIOD          (4) // us
-#define MAX_INTERVAL 8333
 
-const uint32_t timer_interval_sec = 1000;
+#define MAX_INTERVAL 8333
 
 typedef void *HMI_driver_handle_t;
 
@@ -34,18 +31,22 @@ private:
     //IS31FL3235A led_level_driver;
     gptimer_handle_t timer_handle;
     esp_err_t m_flag;
+    gptimer_alarm_config_t alarm_config;
 
 public:
 
     static bool IRAM_ATTR on_timer_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
         SliderDriver *driver = static_cast<SliderDriver *>(user_ctx);
         driver->stop_timer();
+
+        gpio_set_level(GPIO_NUM_10, 0);
         gpio_set_level(GPIO_NUM_10, 1);
+
         return true;
     }
 
     static void IRAM_ATTR gpio_isr_handler(void *arg) {
-        gpio_set_level(GPIO_NUM_10, 0);
+        gpio_set_level(GPIO_NUM_10, 1);
         SliderDriver *driver = static_cast<SliderDriver *>(arg);
         driver->restart_timer();   
     }
@@ -63,8 +64,7 @@ public:
         ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &timer_handle));
 
         // Configurer l'alarme
-        gptimer_alarm_config_t alarm_config;
-        alarm_config.alarm_count = MAX_INTERVAL / 3;
+        alarm_config.alarm_count = MAX_INTERVAL / 2;
         alarm_config.reload_count = false;
         alarm_config.flags.auto_reload_on_alarm = true;
 
@@ -85,7 +85,7 @@ public:
         gpio_set_intr_type(GPIO_NUM_12, GPIO_INTR_ANYEDGE);
         
         gpio_install_isr_service(0);
-        gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
+        // gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
 
     }
 

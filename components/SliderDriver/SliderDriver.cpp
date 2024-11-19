@@ -85,6 +85,7 @@ bool SliderDriver::start()
 {
     //esp_err_t ret = capacitance_touch.begin();
     //ret |= led_level_driver.sendConfig();
+    gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
     return ESP_OK;
 }
 
@@ -119,15 +120,14 @@ esp_err_t SliderDriver::set_brightness(uint8_t brightness)
         float level_norm = (float)m_level / 2.54;
         uint32_t interval = MAX_INTERVAL * (100 - level_norm) / 100;
 
+        // Update the interval
+        this->alarm_config.alarm_count = interval;
+        gptimer_set_alarm_action(timer_handle, &alarm_config);
 
-        // Disable the timer
-
-        
         this->set_power(true);
     }
     else {
 
-        
         this->set_power(false);
     }
 

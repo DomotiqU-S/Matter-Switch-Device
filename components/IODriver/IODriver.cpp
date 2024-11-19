@@ -95,7 +95,6 @@ app_driver_handle_t app_driver_switch_init()
     gpio_pullup_dis(GPIO_NUM_5);
     gpio_set_intr_type(GPIO_NUM_5, GPIO_INTR_NEGEDGE);
 
-    gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_NUM_5, buttonCb, (void*) GPIO_NUM_5);
 
     gpio_set_direction(GPIO_NUM_6, GPIO_MODE_INPUT);
@@ -104,9 +103,27 @@ app_driver_handle_t app_driver_switch_init()
     gpio_set_intr_type(GPIO_NUM_6, GPIO_INTR_POSEDGE);
 
     // gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_NUM_6, touchPnl, (void*) GPIO_NUM_6);
+    // gpio_isr_handler_add(GPIO_NUM_6, touchPnl, (void*) GPIO_NUM_6);
 
     return (app_driver_handle_t)slider_handle;
+}
+
+/* Do any conversions/remapping for the actual value here */
+esp_err_t app_driver_light_set_power(esp_matter_attr_val_t *val)
+{
+    #ifdef DEBUG_DRIVER
+        ESP_LOGE(TAG, "power: %d", val->val.b);
+    #endif
+    return slider.set_power(val->val.b);
+}
+
+esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val)
+{
+    int value = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
+    #ifdef DEBUG_DRIVER
+        ESP_LOGE(TAG, "brightness: %d", value);
+    #endif
+    return slider.set_brightness(value);
 }
 
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
@@ -140,7 +157,19 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
 
 esp_err_t app_driver_set_default(uint16_t endpoint_id)
 {
-    return ESP_OK;
+    esp_err_t err = ESP_OK;
+
+    /* Cluster brightness */
+    esp_matter_attr_val_t val;
+    val.val.u8 = DEFAULT_BRIGHTNESS;
+    err |= app_driver_light_set_brightness(&val);
+
+    /* Cluster state */
+    val.type = (esp_matter_val_type_t)1;
+    val.val.b = DEFAULT_POWER;
+    err |= app_driver_light_set_power(&val);
+
+    return err;
 }
 
 esp_err_t app_driver_start_sensor()

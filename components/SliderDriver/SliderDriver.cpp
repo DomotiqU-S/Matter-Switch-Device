@@ -85,7 +85,7 @@ bool SliderDriver::start()
 {
     //esp_err_t ret = capacitance_touch.begin();
     //ret |= led_level_driver.sendConfig();
-    gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
+    gpio_isr_handler_add(GPIO_NUM_14, gpio_isr_handler, (void *)this);
     return ESP_OK;
 }
 
@@ -127,7 +127,6 @@ esp_err_t SliderDriver::set_brightness(uint8_t brightness)
         this->set_power(true);
     }
     else {
-
         this->set_power(false);
     }
 

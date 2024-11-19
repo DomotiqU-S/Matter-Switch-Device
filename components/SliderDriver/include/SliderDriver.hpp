@@ -12,6 +12,8 @@
 #include <rom/ets_sys.h>
 #include "driver/gptimer.h"
 
+#include "sdkconfig.h"
+
 
 #define MAX_INTERVAL 8333
 
@@ -39,14 +41,14 @@ public:
         SliderDriver *driver = static_cast<SliderDriver *>(user_ctx);
         driver->stop_timer();
 
-        gpio_set_level(GPIO_NUM_10, 0);
-        gpio_set_level(GPIO_NUM_10, 1);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
 
         return true;
     }
 
     static void IRAM_ATTR gpio_isr_handler(void *arg) {
-        gpio_set_level(GPIO_NUM_10, 1);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
         SliderDriver *driver = static_cast<SliderDriver *>(arg);
         driver->restart_timer();   
     }
@@ -78,14 +80,14 @@ public:
 
 
         // Init GPIO
-        gpio_set_direction(GPIO_NUM_10, GPIO_MODE_OUTPUT);
-        gpio_set_level(GPIO_NUM_10, 1);
+        gpio_set_direction(GPIO_NUM_1, GPIO_MODE_OUTPUT);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
 
-        gpio_set_direction(GPIO_NUM_12, GPIO_MODE_INPUT);
-        gpio_set_intr_type(GPIO_NUM_12, GPIO_INTR_ANYEDGE);
+        gpio_set_direction((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_MODE_INPUT);
+        gpio_set_intr_type((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_INTR_POSEDGE);
         
         gpio_install_isr_service(0);
-        // gpio_isr_handler_add(GPIO_NUM_12, gpio_isr_handler, (void *)this);
+        gpio_isr_handler_add((gpio_num_t)CONFIG_TRIAC_SYNC, gpio_isr_handler, (void *)this);
 
     }
 

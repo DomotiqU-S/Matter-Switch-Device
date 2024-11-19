@@ -120,11 +120,11 @@ extern "C" void app_main()
     set_openthread_platform_config(&config);
 #endif
 
-    // // /* Matter start */
-    // err = esp_matter::start(app_event_cb);
-    // if (err != ESP_OK) {
-    //     ESP_LOGE(TAG, "Matter start failed: %d", err);
-    // }
+    // /* Matter start */
+    err = esp_matter::start(app_event_cb);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Matter start failed: %d", err);
+    }
     app_driver_start_sensor();
 
 }

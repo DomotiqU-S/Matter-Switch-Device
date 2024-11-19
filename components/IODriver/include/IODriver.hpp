@@ -5,6 +5,12 @@
 #include <esp_log.h>
 #include <esp_matter.h>
 
+#define MATTER_BRIGHTNESS 254
+#define STANDARD_BRIGHTNESS 100
+
+#define DEFAULT_POWER false
+#define DEFAULT_BRIGHTNESS 60
+
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"
 #endif
@@ -19,6 +25,10 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
 esp_err_t app_driver_set_default(uint16_t endpoint_id);
 
 esp_err_t app_driver_start_sensor();
+
+esp_err_t app_driver_light_set_power(esp_matter_attr_val_t *val);
+
+esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val);
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()                                           \

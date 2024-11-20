@@ -7,10 +7,12 @@
 #include <esp_matter_console.h>
 #include <esp_matter_ota.h>
 
+#include "sdkconfig.h"
+
 #define SWITCH_ON_OFF 0
 #define SWITCH_DIMMABLE 1
 
-#define SWITCH_TYPE SWITCH_DIMMABLE
+#define SWITCH_TYPE CONFIG_DIMMER_TYPE
 
 #define DEFAULT_INTENSITY (uint8_t)69 // Nice!
 #define DEFAULT_STATE true

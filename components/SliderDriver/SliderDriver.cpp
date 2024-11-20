@@ -22,21 +22,21 @@ uint8_t SliderDriver::getLevel(uint8_t max_level)
     uint8_t level = getNewTouches();
     uint8_t value = 0;
 
-    // if(level == 0) {
-    //     return m_previous_level;
-    // }
+    if(level == 0) {
+        return m_previous_level;
+    }
 
-    // uint8_t flipped_byte = 0;
-    // for (int i = 0; i < 8; ++i) {
-    //     flipped_byte |= ((level >> i) & 1) << (7 - i);
-    // }
+    uint8_t flipped_byte = 0;
+    for (int i = 0; i < 8; ++i) {
+        flipped_byte |= ((level >> i) & 1) << (7 - i);
+    }
 
-    // for (int i = 7; i >= 0; --i) {
-    //     if ((flipped_byte >> i) & 1) {
-    //         value = i;
-    //         break;
-    //     }
-    // }
+    for (int i = 7; i >= 0; --i) {
+        if ((flipped_byte >> i) & 1) {
+            value = i;
+            break;
+        }
+    }
 
     // for (int i = 0; i < 8; i++) {
     //     led_level_driver.setPWM(i, 0);
@@ -85,7 +85,7 @@ bool SliderDriver::start()
 {
     //esp_err_t ret = capacitance_touch.begin();
     //ret |= led_level_driver.sendConfig();
-    gpio_isr_handler_add(GPIO_NUM_14, gpio_isr_handler, (void *)this);
+    gpio_isr_handler_add((gpio_num_t)CONFIG_TRIAC_SYNC, gpio_isr_handler, (void *)this);
     return ESP_OK;
 }
 
@@ -107,6 +107,8 @@ esp_err_t SliderDriver::set_power(bool power)
 
 esp_err_t SliderDriver::set_brightness(uint8_t brightness)
 {
+    int32_t actual_level = MAX_INTERVAL * (100 - m_level) / 100;
+
     // Set the brightness
     m_level = brightness;
     start_fade = true;
@@ -116,13 +118,19 @@ esp_err_t SliderDriver::set_brightness(uint8_t brightness)
     }
 
     if(m_level > 1) {
+
         // Update the brightness
-        float level_norm = (float)m_level / 2.54;
-        uint32_t interval = MAX_INTERVAL * (100 - level_norm) / 100;
+        #if FADE_ENABLE
+            this->interval = ((MAX_INTERVAL * (100 - m_level) / 100) - actual_level) / (FADE_RESOLUTION - 1);
+            this->reminder = this->interval % (FADE_RESOLUTION - 1);
+        #else
+            this->interval = MAX_INTERVAL * (100 - m_level) / 100;
+        #endif
 
         // Update the interval
         this->alarm_config.alarm_count = interval;
         gptimer_set_alarm_action(timer_handle, &alarm_config);
+        this->start_fade = true;
 
         this->set_power(true);
     }

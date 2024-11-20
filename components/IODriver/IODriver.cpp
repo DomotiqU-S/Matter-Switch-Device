@@ -41,9 +41,6 @@ void sliderTask(void *pvParameter)
 {
     for(;;) {
         if (is_pressed) {
-
-            // If the button is pressed, change the state of the light
-            ESP_LOGI(TAG, "Button pressed: %d", is_pressed);
             
             esp_matter_attr_val_t attr_val;
             if (!old_state) {
@@ -78,7 +75,7 @@ void sliderTask(void *pvParameter)
             is_fading = false;
         }
 
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
 

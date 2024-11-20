@@ -1,32 +1,73 @@
+
 menu "Settings Dimmer Device"
 
-    config TRIAC_PWM
-        int "Pin for Triac PWM"
-        range 0 27
-        default 1
-        help
-            This is the pin to generate de PWM signal for the triac
+    menu "Dimmer Hardware"
+        config DIMMER_TYPE
+            int "Type of dimmer"
+            range 0 1
+            default 1
+            help
+                Select the type of dimmer to use as a device on_off or dimmer
 
-    config TRIAC_SYNC
-        int "Pin for Triac SYNC"
-        range 0 27
-        default 3
-        help
-            This is the pin to get the sync for the triac
+        config TRIAC_PWM
+            int "Pin for Triac PWM"
+            range 0 27
+            default 1
+            help
+                This is the pin to generate de PWM signal for the triac
 
-    config I2C_SDA
-        int "Pin for i2c data"
-        range 0 27
-        default 0
-        help
-            The data pin for i2c
+        config TRIAC_SYNC
+            int "Pin for Triac SYNC"
+            range 0 27
+            default 3
+            help
+                This is the pin to get the sync for the triac
 
-    config I2C_SCL
-        int "Pin for i2c clock"
-        range 0 27
-        default 10
-        help
-            The clock pin for i2c
+        config PIN_BTN
+            int "Pin for button"
+            range 0 27
+            default 5
+            help
+                This is the pin for the button
 
-        
+        config PIN_TOUCH
+            int "Pin for touch"
+            range 0 27
+            default 6 
+            help
+                This is the pin for the touch
     endmenu
+
+    menu "Dimmer communication"
+        config I2C_SDA
+            int "Pin for i2c data"
+            range 0 27
+            default 0
+            help
+                The data pin for i2c
+
+        config I2C_SCL
+            int "Pin for i2c clock"
+            range 0 27
+            default 10
+            help
+                The clock pin for i2c
+    endmenu
+
+    menu "Dimemr fade"
+        config FADE_ENBALE
+            bool "Enable fade"
+            default y
+            help
+                Enable fade for the dimmer
+
+        config FADE_TIME
+            int "Fade resolution"
+            range 0 100
+            default 20
+            depends on FADE_ENBALE
+            help
+                The duration of the fade: RES / 60 s
+    endmenu
+
+endmenu

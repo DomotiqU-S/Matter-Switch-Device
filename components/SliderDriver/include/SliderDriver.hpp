@@ -16,6 +16,8 @@
 
 
 #define MAX_INTERVAL 8333
+#define FADE_RESOLUTION CONFIG_FADE_TIME
+#define FADE_ENABLE CONFIG_FADE_ENABLE
 
 typedef void *HMI_driver_handle_t;
 
@@ -28,6 +30,10 @@ private:
     
     uint8_t m_level;
     uint8_t m_previous_level = 0;
+    uint8_t step_cpt = 0;
+
+    int32_t interval = 0;
+    int32_t reminder = 0;
 
     //CAP1298 capacitance_touch;
     //IS31FL3235A led_level_driver;
@@ -43,6 +49,18 @@ public:
 
         gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
         gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
+
+        if(driver->start_fade) {
+            // Update the timer
+            driver->step_cpt++;
+            driver->alarm_config.alarm_count += driver->interval;
+            
+            if(driver->step_cpt == FADE_RESOLUTION - 1) {
+                driver->alarm_config.alarm_count += driver->reminder;
+                driver->step_cpt = 0;
+                driver->start_fade = false;
+            }
+        }
 
         return true;
     }

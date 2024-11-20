@@ -14,7 +14,7 @@
 
 #define SWITCH_TYPE CONFIG_DIMMER_TYPE
 
-#define DEFAULT_INTENSITY (uint8_t)69 // Nice!
+#define DEFAULT_INTENSITY (uint8_t)180
 #define DEFAULT_STATE true
 
 using namespace esp_matter;

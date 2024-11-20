@@ -19,6 +19,9 @@
 #define FADE_RESOLUTION CONFIG_FADE_TIME
 #define FADE_ENABLE CONFIG_FADE_ENABLE
 
+#define TIME2INTENSITY(x) (100 - (x * 100 / MAX_INTERVAL))
+#define INTENSITY2TIME(x) (MAX_INTERVAL * (100 - x) / 100)
+
 typedef void *HMI_driver_handle_t;
 
 class SliderDriver : public LightDriver

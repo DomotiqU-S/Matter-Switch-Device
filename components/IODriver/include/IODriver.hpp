@@ -9,7 +9,9 @@
 #define STANDARD_BRIGHTNESS 100
 
 #define DEFAULT_POWER false
-#define DEFAULT_BRIGHTNESS 60
+#define DEFAULT_BRIGHTNESS 180
+
+#define DEBUG_DRIVER
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"

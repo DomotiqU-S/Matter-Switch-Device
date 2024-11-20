@@ -54,7 +54,7 @@ menu "Settings Dimmer Device"
                 The clock pin for i2c
     endmenu
 
-    menu "Dimemr fade"
+    menu "Dimmer fade"
         config FADE_ENBALE
             bool "Enable fade"
             default y

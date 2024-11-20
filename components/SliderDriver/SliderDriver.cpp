@@ -101,6 +101,18 @@ esp_err_t SliderDriver::set_power(bool power)
     // Update the GPIO value
     m_isOn = power;
 
+    if(m_isOn) {
+        this->alarm_config.alarm_count = interval;
+        gptimer_set_alarm_action(timer_handle, &alarm_config);
+    }
+    else {
+        this->set_brightness(0);
+
+        // Update the interval
+        this->alarm_config.alarm_count = this->alarm_config.alarm_count + this->interval;
+        gptimer_set_alarm_action(timer_handle, &alarm_config);
+    }
+
     // Set the power
     return ESP_OK;
 }
@@ -121,21 +133,35 @@ esp_err_t SliderDriver::set_brightness(uint8_t brightness)
 
         // Update the brightness
         #if FADE_ENABLE
-            this->interval = ((MAX_INTERVAL * (100 - m_level) / 100) - actual_level) / (FADE_RESOLUTION - 1);
+            this->interval = ((MAX_INTERVAL * (100 - m_level) / 100) - actual_level);
             this->reminder = this->interval % (FADE_RESOLUTION - 1);
+            this->interval /= (FADE_RESOLUTION - 1);
         #else
-            this->interval = MAX_INTERVAL * (100 - m_level) / 100;
+            this->interval = INTENSITY2TIME(m_level);
         #endif
 
+        // Update the brightness while changing the level
+        if(this->start_fade) {
+            actual_level = TIME2INTENSITY(this->interval * step_cpt);
+
+            // Update the interval
+            this->interval = INTENSITY2TIME(actual_level - m_level);
+        }
+
         // Update the interval
-        this->alarm_config.alarm_count = interval;
-        gptimer_set_alarm_action(timer_handle, &alarm_config);
-        this->start_fade = true;
+        // this->alarm_config.alarm_count = interval;
+        // gptimer_set_alarm_action(timer_handle, &alarm_config);
+        // this->start_fade = true;
 
         this->set_power(true);
     }
     else {
-        this->set_power(false);
+        m_level = 0;
+
+        // Update the interval
+        this->interval = -INTENSITY2TIME(actual_level);
+        this->reminder = -(this->interval % (FADE_RESOLUTION - 1));
+        this->interval /= (FADE_RESOLUTION - 1);
     }
 
     return ESP_OK;

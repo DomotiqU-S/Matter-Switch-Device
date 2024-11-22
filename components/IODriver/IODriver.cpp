@@ -10,7 +10,13 @@
 #include <esp_matter.h>
 #include <esp_matter_console.h>
 
+// include freertos task
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include "SliderDriver.hpp"
+
+#define DEBOUNCE_TIME 300
 
 using namespace esp_matter;
 using namespace chip::app::Clusters;
@@ -24,17 +30,12 @@ bool old_state = false;
 
 uint8_t level = 0;
 uint16_t old_level = 0;
+uint32_t old_tick = 0;
 
 static void IRAM_ATTR buttonCb(void* arg) {
-    is_pressed = !is_pressed;
-}
+    uint32_t tick_now = xTaskGetTickCountFromISR();
 
-static void IRAM_ATTR touchPnl(void* arg) {
-    // Get the touch status
-    level = slider.getLevel(100);
-
-    // Update the touch status
-    slider.updateTouchStatus();
+    is_pressed = (tick_now - old_tick > DEBOUNCE_TIME);
 }
 
 void sliderTask(void *pvParameter)
@@ -50,32 +51,32 @@ void sliderTask(void *pvParameter)
                 attr_val.val.b = false;
             }
 
-            if(attr_val.val.b) {
-                esp_matter_attr_val_t attr_val;
-                attr_val.val.u16 = old_level;
-                attr_val.type = (esp_matter_val_type_t)8;
-                esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
-            }
+            attr_val.type = (esp_matter_val_type_t)1;
+            esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
+            
+            old_state = !old_state;
 
-            else {
-                attr_val.type = (esp_matter_val_type_t)1;
-                esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
-            }
             is_pressed = false;
         }
 
-        if (is_fading) {
-            // If the light is fading, update the level
-            esp_matter_attr_val_t attr_val;
+        if(slider.getNewTouches()) {
 
-            attr_val.val.u16 = level;
-            attr_val.type = (esp_matter_val_type_t)8;
+            slider.updateTouchStatus();
+            level = slider.getLevel(100);
 
-            esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
-            is_fading = false;
+            if(level != old_level) {
+
+                esp_matter_attr_val_t attr_val;
+                attr_val.val.u8 = level;
+
+                attr_val.type = (esp_matter_val_type_t)2;
+                esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
+            
+                old_level = level;
+            }
         }
 
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -87,20 +88,12 @@ app_driver_handle_t app_driver_switch_init()
     ESP_LOGI(TAG, "Slider initialization: %d", slider.getFlag());
 
     // Config the GPIO_PIN 0 as input and install the ISR service for falling edge
-    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_INPUT);
-    gpio_pulldown_en(GPIO_NUM_5);
-    gpio_pullup_dis(GPIO_NUM_5);
-    gpio_set_intr_type(GPIO_NUM_5, GPIO_INTR_NEGEDGE);
+    gpio_set_direction((gpio_num_t)CONFIG_PIN_BTN, GPIO_MODE_INPUT);
+    gpio_pulldown_en((gpio_num_t)CONFIG_PIN_BTN);
+    gpio_pullup_dis((gpio_num_t)CONFIG_PIN_BTN);
+    gpio_set_intr_type((gpio_num_t)CONFIG_PIN_BTN, GPIO_INTR_POSEDGE);
 
-    gpio_isr_handler_add(GPIO_NUM_5, buttonCb, (void*) GPIO_NUM_5);
-
-    gpio_set_direction(GPIO_NUM_6, GPIO_MODE_INPUT);
-    gpio_pulldown_en(GPIO_NUM_6);
-    gpio_pullup_dis(GPIO_NUM_6);
-    gpio_set_intr_type(GPIO_NUM_6, GPIO_INTR_POSEDGE);
-
-    // gpio_install_isr_service(0);
-    // gpio_isr_handler_add(GPIO_NUM_6, touchPnl, (void*) GPIO_NUM_6);
+    gpio_isr_handler_add((gpio_num_t)CONFIG_PIN_BTN, buttonCb, (void*) CONFIG_PIN_BTN);
 
     return (app_driver_handle_t)slider_handle;
 }
@@ -164,6 +157,7 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
     /* Cluster state */
     val.type = (esp_matter_val_type_t)1;
     val.val.b = DEFAULT_POWER;
+    old_state = DEFAULT_POWER;
     err |= app_driver_light_set_power(&val);
 
     return err;
@@ -172,12 +166,12 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
 esp_err_t app_driver_start_sensor()
 {
     bool is_configured = slider.start();
-    // if(is_configured) {
-    //     xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 5, NULL);
-    // }
-    // else {
-    //     ESP_LOGE(TAG, "Slider not configured");
-    // }
+    if(is_configured) {
+        xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 4, NULL);
+    }
+    else {
+        ESP_LOGE(TAG, "Slider not configured");
+    }
 
     return ESP_OK;
 }

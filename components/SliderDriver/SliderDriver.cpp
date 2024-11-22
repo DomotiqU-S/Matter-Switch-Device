@@ -31,18 +31,12 @@ uint8_t SliderDriver::getLevel(uint8_t max_level)
         flipped_byte |= ((level >> i) & 1) << (7 - i);
     }
 
-    for (int i = 7; i >= 0; --i) {
+    for (int i = 7; i > -1; --i) {
         if ((flipped_byte >> i) & 1) {
             value = i;
             break;
         }
     }
-
-    // for (int i = 0; i < 8; i++) {
-    //     led_level_driver.setPWM(i, 0);
-    //     led_level_driver.setLEDControl(i, false);
-    //     led_level_driver.updatePWM();
-    // }
 
     // // Manage led level
     // uint8_t pwm = 60;
@@ -62,68 +56,90 @@ uint8_t SliderDriver::getLevel(uint8_t max_level)
 bool SliderDriver::newTouches()
 {
     // Check if there are new touches
-    //return capacitance_touch.touchStatusChanged();
-
-    return false;
+    return capacitance_touch.touchStatusChanged();
 }
 
 uint8_t SliderDriver::getNewTouches()
 {
     // Get the new touches
-    //return capacitance_touch.getNewTouches();
-
-    return 0;
+    return capacitance_touch.getNewTouches();
 }
 
 void SliderDriver::updateTouchStatus()
 {
     // Update the touch status
-    //capacitance_touch.updateTouchStatus();
+    capacitance_touch.updateTouchStatus();
 }
 
 bool SliderDriver::start()
 {
-    //esp_err_t ret = capacitance_touch.begin();
-    //ret |= led_level_driver.sendConfig();
+    esp_err_t ret = capacitance_touch.begin();
+    ret |= led_level_driver.sendConfig();
+
+    for(uint8_t i = 0; i < 8; i++) {
+        led_level_driver.setPWM(i, 0);
+        led_level_driver.setLEDControl(i, false);
+        led_level_driver.updatePWM();
+    }
+
     gpio_isr_handler_add((gpio_num_t)CONFIG_TRIAC_SYNC, gpio_isr_handler, (void *)this);
-    return ESP_OK;
+    
+    return true;
 }
 
 esp_err_t SliderDriver::set_power(bool power)
 {
     // Set the channel 9 change the color of the front led
-    // led_level_driver.setLEDControl(9, power);
-    // led_level_driver.setPWM(9, power ? 40 : 0);
-    // led_level_driver.setLEDControl(8, !power);
-    // led_level_driver.setPWM(8, !power ? 40 : 0);
-    // led_level_driver.updatePWM();
+    led_level_driver.setLEDControl(9, power);
+    led_level_driver.setPWM(9, power ? 40 : 0);
+    led_level_driver.setLEDControl(8, !power);
+    led_level_driver.setPWM(8, !power ? 40 : 0);
+    led_level_driver.updatePWM();
 
     // Update the GPIO value
     m_isOn = power;
 
     if(m_isOn) {
-        this->alarm_config.alarm_count = interval;
+        getLevel(m_level);
+
+        this->alarm_config.alarm_count = this->interval;
         gptimer_set_alarm_action(timer_handle, &alarm_config);
     }
     else {
         this->set_brightness(0);
-
+        getLevel(0);
         // Update the interval
-        this->alarm_config.alarm_count = this->alarm_config.alarm_count + this->interval;
+        this->alarm_config.alarm_count = this->interval;
         gptimer_set_alarm_action(timer_handle, &alarm_config);
     }
 
-    // Set the power
     return ESP_OK;
+}
+
+/**
+ * @brief 
+ * 
+ * @param level 
+ */
+void SliderDriver::set_level_led(uint8_t level)
+{
+    uint8_t n_led = 8 * level / 100;
+    bool led_status = n_led > 0;
+
+    for(uint8_t i = 0; i < n_led; i++) {
+        led_level_driver.setPWM(7 - i, 100);
+        led_level_driver.setLEDControl(i, led_status);
+        led_level_driver.updatePWM();
+    }
 }
 
 esp_err_t SliderDriver::set_brightness(uint8_t brightness)
 {
-    int32_t actual_level = MAX_INTERVAL * (100 - m_level) / 100;
+    int32_t actual_level = INTENSITY2TIME(m_level);
 
     // Set the brightness
     m_level = brightness;
-    start_fade = true;
+    // start_fade = true;
 
     if(brightness == 1) {
         m_level = 0;
@@ -133,35 +149,30 @@ esp_err_t SliderDriver::set_brightness(uint8_t brightness)
 
         // Update the brightness
         #if FADE_ENABLE
-            this->interval = ((MAX_INTERVAL * (100 - m_level) / 100) - actual_level);
+            this->interval = INTENSITY2TIME(m_level);
             this->reminder = this->interval % (FADE_RESOLUTION - 1);
             this->interval /= (FADE_RESOLUTION - 1);
         #else
             this->interval = INTENSITY2TIME(m_level);
         #endif
 
-        // Update the brightness while changing the level
-        if(this->start_fade) {
-            actual_level = TIME2INTENSITY(this->interval * step_cpt);
+        #if DEBUG_SLIDER
+            ESP_LOGI("SLIDER_DRIVER", "Interval: %" PRId32, this->interval);
+        #endif
 
-            // Update the interval
-            this->interval = INTENSITY2TIME(actual_level - m_level);
-        }
-
-        // Update the interval
-        // this->alarm_config.alarm_count = interval;
-        // gptimer_set_alarm_action(timer_handle, &alarm_config);
-        // this->start_fade = true;
-
-        this->set_power(true);
+        set_level_led(m_level);
     }
     else {
-        m_level = 0;
+        #if FADE_ENABLE
+            // Update the interval
+            this->interval = -INTENSITY2TIME(actual_level);
+            this->reminder = -(this->interval % (FADE_RESOLUTION - 1));
+            this->interval /= (FADE_RESOLUTION - 1);
+        #else
+            this->interval = MAX_INTERVAL;
+        #endif
 
-        // Update the interval
-        this->interval = -INTENSITY2TIME(actual_level);
-        this->reminder = -(this->interval % (FADE_RESOLUTION - 1));
-        this->interval /= (FADE_RESOLUTION - 1);
+        set_level_led(0);
     }
 
     return ESP_OK;

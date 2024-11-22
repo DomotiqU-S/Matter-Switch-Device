@@ -127,4 +127,6 @@ extern "C" void app_main()
     }
     app_driver_start_sensor();
 
+    app_driver_set_default(1);
+
 }

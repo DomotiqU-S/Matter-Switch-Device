@@ -135,6 +135,7 @@ public:
     HMI_driver_handle_t init();
     esp_err_t getFlag();
     uint8_t getLevel(uint8_t max_level);
+    uint8_t getLevelRaw();
     bool newTouches();
     uint8_t getNewTouches();
     void updateTouchStatus();

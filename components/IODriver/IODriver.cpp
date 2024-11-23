@@ -30,12 +30,17 @@ bool old_state = false;
 
 uint8_t level = 0;
 uint16_t old_level = 0;
-uint32_t old_tick = 0;
+uint32_t old_tick_btn = 0;
+uint32_t old_tick_touch = 0;
 
 static void IRAM_ATTR buttonCb(void* arg) {
-    uint32_t tick_now = xTaskGetTickCountFromISR();
+    uint32_t tick_now = xTaskGetTickCount();
 
-    is_pressed = (tick_now - old_tick > DEBOUNCE_TIME);
+    if(tick_now - old_tick_btn > DEBOUNCE_TIME) {
+        is_pressed = true;
+    }
+
+    old_tick_btn = tick_now;
 }
 
 void sliderTask(void *pvParameter)
@@ -46,9 +51,12 @@ void sliderTask(void *pvParameter)
             esp_matter_attr_val_t attr_val;
             if (!old_state) {
                 attr_val.val.b = true;
+
+                slider.set_level_led(old_level);
             }
             else {
                 attr_val.val.b = false;
+                slider.set_level_led(0);
             }
 
             attr_val.type = (esp_matter_val_type_t)1;
@@ -59,20 +67,32 @@ void sliderTask(void *pvParameter)
             is_pressed = false;
         }
 
-        if(slider.getNewTouches()) {
+        if(slider.newTouches()) {
+            uint32_t tick_now = xTaskGetTickCount();
 
-            slider.updateTouchStatus();
-            level = slider.getLevel(100);
+            if(tick_now - old_tick_touch > DEBOUNCE_TIME) {
+                    old_tick_touch = tick_now;
 
-            if(level != old_level) {
+                slider.updateTouchStatus();
+                level = slider.getLevel(254);
 
-                esp_matter_attr_val_t attr_val;
-                attr_val.val.u8 = level;
+                if(level != old_level) {
 
-                attr_val.type = (esp_matter_val_type_t)2;
-                esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
-            
-                old_level = level;
+                    esp_matter_attr_val_t attr_val;
+                    attr_val.val.u8 = level;
+
+                    attr_val.type = (esp_matter_val_type_t)2;
+                    esp_matter::attribute::update(1, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &attr_val);
+
+                    old_level = level;
+
+                    // if actual state is off, change it to on
+                    if(old_state) {
+                        attr_val.val.b = true;
+                        esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
+                        old_state = !old_state;
+                    }
+                }
             }
         }
 
@@ -102,7 +122,7 @@ app_driver_handle_t app_driver_switch_init()
 esp_err_t app_driver_light_set_power(esp_matter_attr_val_t *val)
 {
     #ifdef DEBUG_DRIVER
-        ESP_LOGE(TAG, "power: %d", val->val.b);
+        ESP_LOGI(TAG, "power: %d", val->val.b);
     #endif
     return slider.set_power(val->val.b);
 }
@@ -111,8 +131,9 @@ esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val)
 {
     int value = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
     #ifdef DEBUG_DRIVER
-        ESP_LOGE(TAG, "brightness: %d", value);
+        ESP_LOGI(TAG, "brightness: %d", value);
     #endif
+    slider.set_level_led(value);
     return slider.set_brightness(value);
 }
 
@@ -120,22 +141,19 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
                                       uint32_t attribute_id, esp_matter_attr_val_t *val)
 {
     if (endpoint_id == 1) {
-        // Get the node id of the device
-        //uint64_t node_id = 0;
 
         if (cluster_id == OnOff::Id) {
             if (attribute_id == OnOff::Attributes::OnOff::Id) {
-                // ESP_LOGI("IODriver", "OnOff: %d", val->val.b);
                 slider.set_power(val->val.b);
             }
         }
         else if (cluster_id == LevelControl::Id) {
             if (attribute_id == LevelControl::Attributes::CurrentLevel::Id) {
 
-                // ESP_LOGI("IODriver", "Current level: %d", val->val.u8);
-
                 // Fade the light with the light driver
-                slider.set_brightness(val->val.u8);
+                uint8_t level = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
+                slider.set_level_led(level);
+                slider.set_brightness(level);
 
                 // Save the level for the next iteration
                 old_level = val->val.u8;
@@ -152,6 +170,7 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
     /* Cluster brightness */
     esp_matter_attr_val_t val;
     val.val.u8 = DEFAULT_BRIGHTNESS;
+    old_level = DEFAULT_BRIGHTNESS;
     err |= app_driver_light_set_brightness(&val);
 
     /* Cluster state */

@@ -22,6 +22,13 @@ menu "Settings Dimmer Device"
             default 3
             help
                 This is the pin to get the sync for the triac
+        
+        config PIN_RELAY_ENABLE
+            int "Pin for relay enable"
+            range 0 27
+            default 25
+            help
+                This is the pin to enable the relay
 
         config PIN_BTN
             int "Pin for button"
@@ -57,7 +64,7 @@ menu "Settings Dimmer Device"
     menu "Dimmer fade"
         config FADE_ENBALE
             bool "Enable fade"
-            default y
+            default n
             help
                 Enable fade for the dimmer
 

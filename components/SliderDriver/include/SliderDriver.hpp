@@ -16,7 +16,7 @@
 #include "sdkconfig.h"
 
 #define MAX_INTERVAL 8333
-#define DEBUG_SLIDER 1
+#define DEBUG_SLIDER 0
 #define FADE_ENABLE CONFIG_FADE_ENBALE
 #ifdef CONFIG_FADE_ENBALE
 #define FADE_RESOLUTION CONFIG_FADE_TIME
@@ -144,6 +144,7 @@ public:
     uint8_t getNewTouches();
     void updateTouchStatus();
     void set_level_led(uint8_t level);
+    void set_front_led(bool power);
 
     // LightDriver Methods
     uint16_t get_temperature() { return 0; };

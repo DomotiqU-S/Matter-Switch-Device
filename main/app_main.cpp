@@ -26,10 +26,10 @@ using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace esp_matter::endpoint;
 
-
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
 {
-    switch (event->Type) {
+    switch (event->Type)
+    {
     case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
         ESP_LOGI(TAG, "Interface IP Address Changed");
         break;
@@ -79,7 +79,8 @@ static esp_err_t app_identification_cb(identification::callback_type_t type, uin
 static esp_err_t app_attribute_update_cb(callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id,
                                          uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data)
 {
-    if (type == PRE_UPDATE) {
+    if (type == PRE_UPDATE)
+    {
         app_driver_attribute_update((app_driver_handle_t)priv_data, endpoint_id, cluster_id, attribute_id, val);
     }
 
@@ -103,7 +104,8 @@ extern "C" void app_main()
     esp_err_t ret = configureSwitch(ENDPOINT_FLAG_NONE, switch_handle, node);
 
     /* These node and endpoint handles can be used to create/add other endpoints and clusters. */
-    if (!node || ret != ESP_OK) {
+    if (!node || ret != ESP_OK)
+    {
         ESP_LOGE(TAG, "Matter node creation failed");
     }
 
@@ -121,12 +123,14 @@ extern "C" void app_main()
 #endif
 
     // /* Matter start */
-    err = esp_matter::start(app_event_cb);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Matter start failed: %d", err);
-    }
+    // err = esp_matter::start(app_event_cb);
+    // if (err != ESP_OK) {
+    //     ESP_LOGE(TAG, "Matter start failed: %d", err);
+    // }
+
     app_driver_start_sensor();
 
-    app_driver_set_default(1);
+    app_driver_loop();
 
+    // app_driver_set_default(1);
 }

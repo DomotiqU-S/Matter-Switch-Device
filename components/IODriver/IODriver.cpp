@@ -33,10 +33,12 @@ uint16_t old_level = 0;
 uint32_t old_tick_btn = 0;
 uint32_t old_tick_touch = 0;
 
-static void IRAM_ATTR buttonCb(void* arg) {
+static void IRAM_ATTR buttonCb(void *arg)
+{
     uint32_t tick_now = xTaskGetTickCount();
 
-    if(tick_now - old_tick_btn > DEBOUNCE_TIME) {
+    if (tick_now - old_tick_btn > DEBOUNCE_TIME)
+    {
         is_pressed = true;
     }
 
@@ -45,38 +47,45 @@ static void IRAM_ATTR buttonCb(void* arg) {
 
 void sliderTask(void *pvParameter)
 {
-    for(;;) {
-        if (is_pressed) {
-            
+    for (;;)
+    {
+        if (is_pressed)
+        {
+
             esp_matter_attr_val_t attr_val;
-            if (!old_state) {
+            if (!old_state)
+            {
                 attr_val.val.b = true;
 
                 slider.set_level_led(old_level);
             }
-            else {
+            else
+            {
                 attr_val.val.b = false;
                 slider.set_level_led(0);
             }
 
             attr_val.type = (esp_matter_val_type_t)1;
             esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
-            
+
             old_state = !old_state;
 
             is_pressed = false;
         }
 
-        if(slider.newTouches()) {
+        if (slider.newTouches())
+        {
             uint32_t tick_now = xTaskGetTickCount();
 
-            if(tick_now - old_tick_touch > DEBOUNCE_TIME) {
-                    old_tick_touch = tick_now;
+            if (tick_now - old_tick_touch > DEBOUNCE_TIME)
+            {
+                old_tick_touch = tick_now;
 
                 slider.updateTouchStatus();
                 level = slider.getLevel(254);
 
-                if(level != old_level) {
+                if (level != old_level)
+                {
 
                     esp_matter_attr_val_t attr_val;
                     attr_val.val.u8 = level;
@@ -87,7 +96,8 @@ void sliderTask(void *pvParameter)
                     old_level = level;
 
                     // if actual state is off, change it to on
-                    if(old_state) {
+                    if (old_state)
+                    {
                         attr_val.val.b = true;
                         esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
                         old_state = !old_state;
@@ -100,11 +110,39 @@ void sliderTask(void *pvParameter)
     }
 }
 
+void loopTask(void *pvParameter)
+{
+    for (;;)
+    {
+
+        uint32_t tick_now = xTaskGetTickCount();
+
+        if (tick_now - old_tick_touch > DEBOUNCE_TIME)
+        {
+            if (level < 254)
+            {
+                level += 25
+            }
+            else
+            {
+                level = 0;
+            }
+            old_tick_touch = tick_now;
+
+            // change pwm
+            slider.set_level_led(level);
+            slider.set_brightness(level);
+        }
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+}
+
 app_driver_handle_t app_driver_switch_init()
 {
     HMI_driver_handle_t slider_handle = slider.init();
 
-    //Create a task for the slider
+    // Create a task for the slider
     ESP_LOGI(TAG, "Slider initialization: %d", slider.getFlag());
 
     // Config the GPIO_PIN 0 as input and install the ISR service for falling edge
@@ -113,7 +151,7 @@ app_driver_handle_t app_driver_switch_init()
     gpio_pullup_dis((gpio_num_t)CONFIG_PIN_BTN);
     gpio_set_intr_type((gpio_num_t)CONFIG_PIN_BTN, GPIO_INTR_POSEDGE);
 
-    gpio_isr_handler_add((gpio_num_t)CONFIG_PIN_BTN, buttonCb, (void*) CONFIG_PIN_BTN);
+    gpio_isr_handler_add((gpio_num_t)CONFIG_PIN_BTN, buttonCb, (void *)CONFIG_PIN_BTN);
 
     return (app_driver_handle_t)slider_handle;
 }
@@ -121,18 +159,18 @@ app_driver_handle_t app_driver_switch_init()
 /* Do any conversions/remapping for the actual value here */
 esp_err_t app_driver_light_set_power(esp_matter_attr_val_t *val)
 {
-    #ifdef DEBUG_DRIVER
-        ESP_LOGI(TAG, "power: %d", val->val.b);
-    #endif
+#ifdef DEBUG_DRIVER
+    ESP_LOGI(TAG, "power: %d", val->val.b);
+#endif
     return slider.set_power(val->val.b);
 }
 
 esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val)
 {
     int value = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
-    #ifdef DEBUG_DRIVER
-        ESP_LOGI(TAG, "brightness: %d", value);
-    #endif
+#ifdef DEBUG_DRIVER
+    ESP_LOGI(TAG, "brightness: %d", value);
+#endif
     slider.set_level_led(value);
     return slider.set_brightness(value);
 }
@@ -140,15 +178,20 @@ esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val)
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val)
 {
-    if (endpoint_id == 1) {
+    if (endpoint_id == 1)
+    {
 
-        if (cluster_id == OnOff::Id) {
-            if (attribute_id == OnOff::Attributes::OnOff::Id) {
+        if (cluster_id == OnOff::Id)
+        {
+            if (attribute_id == OnOff::Attributes::OnOff::Id)
+            {
                 slider.set_power(val->val.b);
             }
         }
-        else if (cluster_id == LevelControl::Id) {
-            if (attribute_id == LevelControl::Attributes::CurrentLevel::Id) {
+        else if (cluster_id == LevelControl::Id)
+        {
+            if (attribute_id == LevelControl::Attributes::CurrentLevel::Id)
+            {
 
                 // Fade the light with the light driver
                 uint8_t level = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
@@ -185,11 +228,29 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
 esp_err_t app_driver_start_sensor()
 {
     bool is_configured = slider.start();
-    if(is_configured) {
+    if (is_configured)
+    {
         xTaskCreate(sliderTask, "sliderTask", 4096, NULL, 4, NULL);
     }
-    else {
+    else
+    {
         ESP_LOGE(TAG, "Slider not configured");
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t app_driver_loop()
+{
+
+    bool is_configured = slider.start();
+    if (is_configured)
+    {
+        xTaskCreate(loopTask, "loopTask", 4096, NULL, 4, NULL);
+    }
+    else
+    {
+        ESP_LOGE(TAG, ﻿"Slider not configured");
     }
 
     return ESP_OK;

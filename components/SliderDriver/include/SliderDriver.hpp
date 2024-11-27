@@ -15,12 +15,11 @@
 
 #include "sdkconfig.h"
 
-
 #define MAX_INTERVAL 8333
 #define DEBUG_SLIDER 1
 #define FADE_ENABLE CONFIG_FADE_ENBALE
 #ifdef CONFIG_FADE_ENBALE
-    #define FADE_RESOLUTION CONFIG_FADE_RESOLUTION
+#define FADE_RESOLUTION CONFIG_FADE_TIME
 #endif
 
 #define TIME2INTENSITY(x) (100 - (x * 100 / MAX_INTERVAL))
@@ -34,7 +33,7 @@ private:
     bool m_isOn = false;
     bool start_fade = false;
     bool is_running = false;
-    
+
     uint8_t m_level;
     uint8_t m_previous_level = 0;
     uint8_t step_cpt = 0;
@@ -49,41 +48,46 @@ private:
     gptimer_alarm_config_t alarm_config;
 
 public:
-
-    static bool IRAM_ATTR on_timer_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
+    static bool IRAM_ATTR on_timer_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx)
+    {
         SliderDriver *driver = static_cast<SliderDriver *>(user_ctx);
         driver->stop_timer();
 
-        for(uint8_t i = 0; i < 63; i++) {
+        for (uint8_t i = 0; i < 63; i++)
+        {
             gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
         }
         // gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
         gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
 
-        #if FADE_ENABLE
-            if(driver->start_fade) {
-                // Update the timer
-                driver->step_cpt++;
-                driver->alarm_config.alarm_count -= driver->interval;
-                
-                if(driver->step_cpt == FADE_RESOLUTION - 1) {
-                    driver->alarm_config.alarm_count -= driver->reminder;
-                    driver->step_cpt = 0;
-                    driver->start_fade = false;
-                }
+#if FADE_ENABLE
+        if (driver->start_fade)
+        {
+            // Update the timer
+            driver->step_cpt++;
+            driver->alarm_config.alarm_count -= driver->interval;
+
+            if (driver->step_cpt == FADE_RESOLUTION - 1)
+            {
+                driver->alarm_config.alarm_count -= driver->reminder;
+                driver->step_cpt = 0;
+                driver->start_fade = false;
             }
-        #endif
+        }
+#endif
 
         return true;
     }
 
-    static void IRAM_ATTR gpio_isr_handler(void *arg) {
+    static void IRAM_ATTR gpio_isr_handler(void *arg)
+    {
         gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
         SliderDriver *driver = static_cast<SliderDriver *>(arg);
-        driver->restart_timer();   
+        driver->restart_timer();
     }
 
-    SliderDriver() : capacitance_touch((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL), led_level_driver((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL, IS31FL3235A_ADDR) {
+    SliderDriver() : capacitance_touch((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL), led_level_driver((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL, IS31FL3235A_ADDR)
+    {
         m_flag = led_level_driver.begin();
 
         gptimer_config_t timer_config = {
@@ -107,24 +111,24 @@ public:
         ESP_ERROR_CHECK(gptimer_set_alarm_action(timer_handle, &alarm_config));
         ESP_ERROR_CHECK(gptimer_enable(timer_handle));
 
-
         // Init GPIO
         gpio_set_direction(GPIO_NUM_1, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
 
         gpio_set_direction((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_MODE_INPUT);
         gpio_set_intr_type((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_INTR_POSEDGE);
-        
-        gpio_install_isr_service(0);
 
+        gpio_install_isr_service(0);
     }
 
-    void restart_timer() {
+    void restart_timer()
+    {
         gptimer_start(timer_handle);
         this->is_running = true;
     }
 
-    void stop_timer() {
+    void stop_timer()
+    {
         gptimer_stop(timer_handle);
         gptimer_set_raw_count(timer_handle, 0);
         this->is_running = false;
@@ -157,8 +161,8 @@ public:
     esp_err_t set_saturation(uint8_t saturation) { return 0; };
     esp_err_t set_temperature(uint32_t temperature) { return 0; };
 
-    void led_routine() {
-
+    void led_routine()
+    {
     }
 };
 

@@ -119,9 +119,10 @@ void loopTask(void *pvParameter)
 
         if (tick_now - old_tick_touch > DEBOUNCE_TIME)
         {
+            old_tick_touch = tick_now;
             if (level < 254)
             {
-                level += 25
+                level += 25;
             }
             else
             {
@@ -250,7 +251,7 @@ esp_err_t app_driver_loop()
     }
     else
     {
-        ESP_LOGE(TAG, ﻿"Slider not configured");
+        ESP_LOGE(TAG, "Slider not configured");
     }
 
     return ESP_OK;

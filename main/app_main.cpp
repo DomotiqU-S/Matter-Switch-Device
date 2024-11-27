@@ -128,7 +128,7 @@ extern "C" void app_main()
     //     ESP_LOGE(TAG, "Matter start failed: %d", err);
     // }
 
-    app_driver_start_sensor();
+    // app_driver_start_sensor();
 
     app_driver_loop();
 

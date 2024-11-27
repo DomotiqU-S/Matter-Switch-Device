@@ -20,7 +20,7 @@
 #define DEBUG_SLIDER 1
 #define FADE_ENABLE CONFIG_FADE_ENBALE
 #ifdef CONFIG_FADE_ENBALE
-    #define FADE_RESOLUTION CONFIG_FADE_RESOLUTION
+    #define FADE_RESOLUTION CONFIG_FADE_TIME
 #endif
 
 #define TIME2INTENSITY(x) (100 - (x * 100 / MAX_INTERVAL))
@@ -140,6 +140,7 @@ public:
     uint8_t getNewTouches();
     void updateTouchStatus();
     void set_level_led(uint8_t level);
+    void set_front_led(bool power);
 
     // LightDriver Methods
     uint16_t get_temperature() { return 0; };

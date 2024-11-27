@@ -84,13 +84,6 @@ bool SliderDriver::start()
 
 esp_err_t SliderDriver::set_power(bool power)
 {
-    // Set the channel 9 change the color of the front led
-    led_level_driver.setLEDControl(9, power);
-    led_level_driver.setPWM(9, power ? 40 : 0);
-    led_level_driver.setLEDControl(8, !power);
-    led_level_driver.setPWM(8, !power ? 40 : 0);
-    led_level_driver.updatePWM();
-
     // Update the GPIO value
     m_isOn = power;
 
@@ -108,7 +101,6 @@ esp_err_t SliderDriver::set_power(bool power)
         // Update the interval
         this->alarm_config.alarm_count = this->interval;
         gptimer_set_alarm_action(timer_handle, &alarm_config);
-        // this->m_level = this->m_previous_level;
     }
 
     return ESP_OK;
@@ -139,6 +131,16 @@ void SliderDriver::set_level_led(uint8_t level)
         led_level_driver.setLEDControl(7 - i, !led_status);
         led_level_driver.updatePWM();
     }
+}
+
+void SliderDriver::set_front_led(bool power)
+{
+    // Set the channel 9 change the color of the front led
+    led_level_driver.setLEDControl(9, power);
+    led_level_driver.setPWM(9, power ? 40 : 0);
+    led_level_driver.setLEDControl(8, !power);
+    led_level_driver.setPWM(8, !power ? 40 : 0);
+    led_level_driver.updatePWM();
 }
 
 esp_err_t SliderDriver::set_brightness(uint8_t brightness)

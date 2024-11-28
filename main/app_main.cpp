@@ -131,6 +131,18 @@ extern "C" void app_main()
     // app_driver_start_sensor();
 
     app_driver_loop();
+    // for (;;)
+    // {
+    //     // gpio_get_level((gpio_num_t)CONFIG_TRIAC_SYNC);
+    //     // gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, true);
+    //     // gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
+    //     ESP_LOGI(TAG, "PWM ON");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //     // gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, true);
+    //     // gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
+    //     ESP_LOGI(TAG, "PWM OFF");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // }
 
     // app_driver_set_default(1);
 }

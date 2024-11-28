@@ -48,6 +48,7 @@ private:
     gptimer_alarm_config_t alarm_config;
 
 public:
+    bool full_power = false;
     static bool IRAM_ATTR on_timer_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx)
     {
         SliderDriver *driver = static_cast<SliderDriver *>(user_ctx);
@@ -55,10 +56,10 @@ public:
 
         for (uint8_t i = 0; i < 63; i++)
         {
-            gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
+            gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
         }
         // gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
-        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
 
 #if FADE_ENABLE
         if (driver->start_fade)
@@ -81,9 +82,12 @@ public:
 
     static void IRAM_ATTR gpio_isr_handler(void *arg)
     {
-        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
         SliderDriver *driver = static_cast<SliderDriver *>(arg);
-        driver->restart_timer();
+        if (!driver->full_power)
+        {
+            gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
+            driver->restart_timer();
+        }
     }
 
     SliderDriver() : capacitance_touch((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL), led_level_driver((gpio_num_t)CONFIG_I2C_SDA, (gpio_num_t)CONFIG_I2C_SCL, IS31FL3235A_ADDR)
@@ -113,7 +117,7 @@ public:
 
         // Init GPIO
         gpio_set_direction(GPIO_NUM_1, GPIO_MODE_OUTPUT);
-        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
 
         gpio_set_direction((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_MODE_INPUT);
         gpio_set_intr_type((gpio_num_t)CONFIG_TRIAC_SYNC, GPIO_INTR_POSEDGE);
@@ -155,7 +159,7 @@ public:
     uint16_t get_x() { return 0; };
     uint16_t get_y() { return 0; };
 
-    esp_err_t set_power(bool power) override;
+    esp_err_t set_power(bool power, bool btn = false) override;
     esp_err_t set_brightness(uint8_t brightness) override;
     esp_err_t set_color(uint16_t x, uint16_t y) { return 0; };
     esp_err_t set_hue(uint16_t hue) { return 0; };

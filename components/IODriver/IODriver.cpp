@@ -115,16 +115,17 @@ void sliderTask(void *pvParameter)
 }
 void loopTask(void *pvParameter)
 {
-    ESP_LOGI(TAG, "Loop task");
     for (;;)
     {
         for (uint8_t i = 0; i < 10; i++)
         {
             level = i * 25;
             // change pwm
+            int32_t actual_level = REMAP_TO_RANGE(level, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
             slider.set_level_led(level);
-            slider.set_brightness(level);
+            slider.set_brightness(actual_level);
             slider.set_power(level == 0 ? false : true);
+            gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, level == 0 ? false : true);
             slider.set_front_led(level == 0 ? false : true);
             ESP_LOGI("IO_DRIVER", "Level: %d", level);
             vTaskDelay(700 / portTICK_PERIOD_MS);
@@ -132,31 +133,46 @@ void loopTask(void *pvParameter)
         for (uint8_t i = 0; i < 10; i++)
         {
             level = 250 - i * 25;
-
+            int32_t actual_level = REMAP_TO_RANGE(level, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
             // change pwm
             slider.set_level_led(level);
-            slider.set_brightness(level);
+            slider.set_brightness(actual_level);
             slider.set_power(level == 0 ? false : true);
+            gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, level == 0 ? false : true);
             slider.set_front_led(level == 0 ? false : true);
             ESP_LOGI("IO_DRIVER", "Level: %d", level);
             vTaskDelay(700 / portTICK_PERIOD_MS);
         }
-        ESP_LOGI(TAG, "SET OFF");
+
         level = 0;
-        slider.set_brightness(level);
+        slider.set_power(false, true);
         slider.set_level_led(level);
-        slider.set_front_led(false);
-        slider.set_power(false);
+        slider.set_front_led(level == 0 ? false : true);
+        ESP_LOGI(TAG, "SET 0");
         vTaskDelay(5000 / portTICK_PERIOD_MS);
 
-        ESP_LOGI(TAG, "SET ON");
-        level = 250;
-        slider.set_brightness(level);
+        level = 254;
+        slider.set_power(true, true);
         slider.set_level_led(level);
-        slider.set_front_led(true);
-        slider.set_power(true);
+        slider.set_front_led(level == 0 ? false : true);
+        ESP_LOGI(TAG, "SET 254");
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
+    // for (;;)
+    // {
+    //     level = 250;
+    //     gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 1);
+    //     slider.set_level_led(level);
+    //     slider.set_front_led(true);
+    //     ESP_LOGI(TAG, "PWM ON");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //     level = 0;
+    //     slider.set_level_led(level);
+    //     slider.set_front_led(false);
+    //     gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, 0);
+    //     ESP_LOGI(TAG, "PWM OFF");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // }
 }
 
 app_driver_handle_t app_driver_switch_init()
@@ -169,6 +185,8 @@ app_driver_handle_t app_driver_switch_init()
     // Config the GPIO_PIN 0 as input and install the ISR service for falling edge
     gpio_set_direction((gpio_num_t)CONFIG_PIN_BTN, GPIO_MODE_INPUT);
     gpio_set_direction((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, true);
+    gpio_set_direction((gpio_num_t)CONFIG_TRIAC_PWM, GPIO_MODE_OUTPUT);
     gpio_pulldown_en((gpio_num_t)CONFIG_PIN_BTN);
     gpio_pullup_dis((gpio_num_t)CONFIG_PIN_BTN);
     gpio_set_intr_type((gpio_num_t)CONFIG_PIN_BTN, GPIO_INTR_POSEDGE);

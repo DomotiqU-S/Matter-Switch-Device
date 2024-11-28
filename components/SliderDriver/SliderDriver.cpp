@@ -88,15 +88,23 @@ bool SliderDriver::start()
     return true;
 }
 
-esp_err_t SliderDriver::set_power(bool power)
+esp_err_t SliderDriver::set_power(bool power, bool btn)
 {
+
     // Update the GPIO value
     m_isOn = power;
 
+    full_power = false;
+    gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, power);
+    if (btn)
+    {
+        full_power = true;
+        gpio_set_level((gpio_num_t)CONFIG_TRIAC_PWM, power);
+        stop_timer();
+    }
     if (m_isOn)
     {
         // getLevel(m_level);
-
         // this->set_brightness(m_level);
         this->alarm_config.alarm_count = this->interval;
         gptimer_set_alarm_action(timer_handle, &alarm_config);

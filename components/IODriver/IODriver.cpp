@@ -17,6 +17,7 @@
 #include "SliderDriver.hpp"
 
 #define DEBOUNCE_TIME 300
+#define DEBOUNCE_TIME_TOUCH 20
 
 using namespace esp_matter;
 using namespace chip::app::Clusters;
@@ -70,7 +71,7 @@ void sliderTask(void *pvParameter)
         if(slider.newTouches()) {
             uint32_t tick_now = xTaskGetTickCount();
 
-            if(tick_now - old_tick_touch > DEBOUNCE_TIME) {
+            if(tick_now - old_tick_touch > DEBOUNCE_TIME_TOUCH) {
                     old_tick_touch = tick_now;
 
                 slider.updateTouchStatus();
@@ -150,6 +151,7 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
         else if (cluster_id == LevelControl::Id) {
             if (attribute_id == LevelControl::Attributes::CurrentLevel::Id) {
 
+                ESP_LOGI(TAG, "Callback matter attribute bacon");
                 // Fade the light with the light driver
                 uint8_t level = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
                 slider.set_level_led(level);

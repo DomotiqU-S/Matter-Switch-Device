@@ -1,4 +1,7 @@
 #include "SliderDriver.hpp"
+#include "I2CController.hpp"
+#include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 
 SliderDriver::~SliderDriver()
 {
@@ -121,6 +124,7 @@ esp_err_t SliderDriver::set_power(bool power)
  */
 void SliderDriver::set_level_led(uint8_t level)
 {
+    ESP_LOGI(TAG, "Set level led bacon to %u", level);
     uint8_t n_led = 8 * level / 100;
     bool led_status = n_led > 0;
 
@@ -129,12 +133,17 @@ void SliderDriver::set_level_led(uint8_t level)
     }
 
     for(uint8_t i = 0; i < n_led; i++) {
+    ESP_LOGI(TAG, "Bacon a %u", i);
+        /*vTaskDelay(pdMS_TO_TICKS(40));*/
         led_level_driver.setPWM(7 - i, 100);
         led_level_driver.setLEDControl(7 - i, led_status);
         led_level_driver.updatePWM();
     }
 
     for(uint8_t i = n_led; i < 8; i++) {
+    ESP_LOGI(TAG, "Bacon b %u", i);
+                /*vTaskDelay(pdMS_TO_TICKS(40));*/
+
         led_level_driver.setPWM(7 - i, 0);
         led_level_driver.setLEDControl(7 - i, !led_status);
         led_level_driver.updatePWM();

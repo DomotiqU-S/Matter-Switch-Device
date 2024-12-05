@@ -15,6 +15,7 @@
 #include <freertos/task.h>
 
 #include "SliderDriver.hpp"
+#include <inttypes.h>
 
 #define DEBOUNCE_TIME 300
 #define DEBOUNCE_TIME_TOUCH 20
@@ -27,7 +28,7 @@ SliderDriver slider;
 
 bool is_pressed = false;
 bool is_fading = false;
-bool old_state = false;
+bool old_state = true;
 
 uint8_t level = 0;
 uint16_t old_level = 0;
@@ -51,13 +52,12 @@ void sliderTask(void *pvParameter)
             
             esp_matter_attr_val_t attr_val;
             if (!old_state) {
+                printf("ON\n");
                 attr_val.val.b = true;
-
-                slider.set_level_led(old_level);
             }
             else {
+                printf("OFF\n");
                 attr_val.val.b = false;
-                slider.set_level_led(0);
             }
 
             attr_val.type = (esp_matter_val_type_t)1;
@@ -88,7 +88,7 @@ void sliderTask(void *pvParameter)
                     old_level = level;
 
                     // if actual state is off, change it to on
-                    if(old_state) {
+                    if(!old_state) {
                         attr_val.val.b = true;
                         esp_matter::attribute::update(1, OnOff::Id, OnOff::Attributes::OnOff::Id, &attr_val);
                         old_state = !old_state;
@@ -97,7 +97,11 @@ void sliderTask(void *pvParameter)
             }
         }
 
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        // Update the front led and the indicator led
+        slider.set_front_led(old_state);
+        slider.set_level_led(old_state ? slider.getLevelRaw() : 0);
+
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
 
@@ -110,6 +114,7 @@ app_driver_handle_t app_driver_switch_init()
 
     // Config the GPIO_PIN 0 as input and install the ISR service for falling edge
     gpio_set_direction((gpio_num_t)CONFIG_PIN_BTN, GPIO_MODE_INPUT);
+    gpio_set_direction((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, GPIO_MODE_OUTPUT);
     gpio_pulldown_en((gpio_num_t)CONFIG_PIN_BTN);
     gpio_pullup_dis((gpio_num_t)CONFIG_PIN_BTN);
     gpio_set_intr_type((gpio_num_t)CONFIG_PIN_BTN, GPIO_INTR_POSEDGE);
@@ -122,29 +127,25 @@ app_driver_handle_t app_driver_switch_init()
 /* Do any conversions/remapping for the actual value here */
 esp_err_t app_driver_light_set_power(esp_matter_attr_val_t *val)
 {
-    #ifdef DEBUG_DRIVER
-        ESP_LOGI(TAG, "power: %d", val->val.b);
-    #endif
     return slider.set_power(val->val.b);
 }
 
 esp_err_t app_driver_light_set_brightness(esp_matter_attr_val_t *val)
 {
-    int value = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
-    #ifdef DEBUG_DRIVER
-        ESP_LOGI(TAG, "brightness: %d", value);
-    #endif
-    slider.set_level_led(value);
+    uint8_t value = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
+    // slider.set_level_led(value);
     return slider.set_brightness(value);
 }
 
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val)
 {
+
     if (endpoint_id == 1) {
 
         if (cluster_id == OnOff::Id) {
             if (attribute_id == OnOff::Attributes::OnOff::Id) {
+                gpio_set_level((gpio_num_t)CONFIG_PIN_RELAY_ENABLE, val->val.b);
                 slider.set_power(val->val.b);
             }
         }
@@ -154,7 +155,7 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
                 ESP_LOGI(TAG, "Callback matter attribute bacon");
                 // Fade the light with the light driver
                 uint8_t level = REMAP_TO_RANGE(val->val.u8, MATTER_BRIGHTNESS, STANDARD_BRIGHTNESS);
-                slider.set_level_led(level);
+                // slider.set_level_led(level);
                 slider.set_brightness(level);
 
                 // Save the level for the next iteration
@@ -169,17 +170,32 @@ esp_err_t app_driver_set_default(uint16_t endpoint_id)
 {
     esp_err_t err = ESP_OK;
 
-    /* Cluster brightness */
-    esp_matter_attr_val_t val;
+    node_t *node = node::get();
+    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    cluster_t *cluster = NULL;
+    attribute_t *attribute = NULL;
+
+    esp_matter_attr_val_t val = esp_matter_invalid(NULL);
+
+    // Update the level control cluster
+    cluster = cluster::get(endpoint, LevelControl::Id);
+    attribute = attribute::get(cluster, LevelControl::Attributes::CurrentLevel::Id);
+    attribute::get_val(attribute, &val);
     val.val.u8 = DEFAULT_BRIGHTNESS;
-    old_level = DEFAULT_BRIGHTNESS;
-    err |= app_driver_light_set_brightness(&val);
+
+    esp_matter::attribute::update(endpoint_id, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id, &val);
+
+    app_driver_light_set_brightness(&val);
 
     /* Cluster state */
-    val.type = (esp_matter_val_type_t)1;
+    cluster = cluster::get(endpoint, OnOff::Id);
+    attribute = attribute::get(cluster, OnOff::Attributes::OnOff::Id);
+    attribute::get_val(attribute, &val);
     val.val.b = DEFAULT_POWER;
-    old_state = DEFAULT_POWER;
-    err |= app_driver_light_set_power(&val);
+
+    esp_matter::attribute::update(endpoint_id, OnOff::Id, OnOff::Attributes::OnOff::Id, &val);
+
+    app_driver_light_set_power(&val);
 
     return err;
 }

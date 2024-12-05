@@ -140,6 +140,7 @@ public:
     uint8_t getNewTouches();
     void updateTouchStatus();
     void set_level_led(uint8_t level);
+    void set_front_led(bool power);
 
     // LightDriver Methods
     uint16_t get_temperature() { return 0; };
